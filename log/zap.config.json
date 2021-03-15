@@ -1,0 +1,17 @@
+{
+  "level": "debug",
+  "encoding": "console",
+  "outputPaths": [
+    "stdout",
+    "pool.log"
+  ],
+  "errorOutputPaths": [
+    "stderr"
+  ],
+  "encoderConfig": {
+    "messageKey": "msg",
+    "levelKey": "level",
+    "levelEncoder": "lowercase",
+    "timeEncoder": "ISO8601"
+  }
+}

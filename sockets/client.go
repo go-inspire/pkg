@@ -13,7 +13,7 @@ import (
 var (
 	addr = flag.String(
 		"addr",
-		"54.254.81.45:3333",
+		"127.0.0.1:3333",
 		"Address to connect.")
 
 	duration = flag.Duration(

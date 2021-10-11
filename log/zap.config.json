@@ -1,9 +1,13 @@
 {
   "level": "debug",
+  "named": {
+    "log1": "debug",
+    "log2": "info",
+    "log3": "warn",
+    "log4": "error"
+  },
   "encoding": "console",
   "outputPaths": [
-    "stdout",
-    "pool.log"
   ],
   "errorOutputPaths": [
     "stderr"

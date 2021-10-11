@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"inspire-pkg/app/server"
+	"github.com/go-inspire/pkg/app/server"
 	"os"
 )
 

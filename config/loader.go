@@ -2,28 +2,33 @@ package config
 
 import (
 	"bufio"
+	"context"
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-inspire/pkg/log"
 	"gopkg.in/yaml.v2"
-	"log"
 	"os"
 	"path/filepath"
 )
 
-type Config struct {
+type Loader struct {
 	path  string            //配置文件路径
 	fw    *fsnotify.Watcher //监控文件变化，自动加载
 	value interface{}
 }
 
-func NewLoader(path string, v interface{}) *Config {
+func (c *Loader) Value() interface{} {
+	return c.value
+}
+
+func NewLoader(path string, v interface{}) *Loader {
 	path, _ = filepath.Abs(path)
-	return &Config{
+	return &Loader{
 		path:  path,
 		value: v,
 	}
 }
 
-func (c *Config) Start() error {
+func (c *Loader) Start(ctx context.Context) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -34,39 +39,40 @@ func (c *Config) Start() error {
 	err = watcher.Add(c.path)
 	for {
 		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
-			log.Print("event:", event)
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				log.Print("modified file:", event.Name)
+		case <-ctx.Done():
+			return ctx.Err()
+
+		case event := <-watcher.Events:
+			log.Info("event:", event)
+			if event.Op&fsnotify.Write == fsnotify.Write || event.Op == fsnotify.Rename {
+				log.Info("modified file:", event.Name)
 				err := c.Load()
 				if err != nil {
-					log.Print("error:", err)
+					log.Error("error:", err)
 				}
 
 			}
+
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return err
 			}
-			log.Print("error:", err)
+			log.Error("error:", err)
 		}
 	}
 
 }
 
-func (c *Config) Stop() error {
-	log.Print("Stop config file watcher...")
+func (c *Loader) Stop(ctx context.Context) error {
+	log.Info("Stop config file watcher...")
 	return c.fw.Close()
 }
 
-func (c *Config) Load() error {
+func (c *Loader) Load() error {
 	log.Printf("Loading config: %v", c.path)
 	err := read(c.path, c.value)
 	if err != nil {
-		panic("Config error: " + err.Error())
+		panic("Loader error: " + err.Error())
 	}
 	return err
 }

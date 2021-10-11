@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"inspire-pkg/app"
+	"github.com/go-inspire/pkg/app"
 	"log"
 	"time"
 )
@@ -22,7 +22,7 @@ func NewServer(name string) *server {
 	}
 
 }
-func (s server) Start() error {
+func (s server) Start(ctx context.Context) error {
 	log.Printf("%s started", s.name)
 
 	for {
@@ -37,7 +37,7 @@ func (s server) Start() error {
 	}
 }
 
-func (s server) Stop() error {
+func (s server) Stop(ctx context.Context) error {
 	if s.cancel != nil {
 		log.Printf("%s cancel\n", s.name)
 		s.cancel()
@@ -46,7 +46,8 @@ func (s server) Stop() error {
 }
 
 func main() {
-	app := app.New("test",
+	app := app.New(
+		app.Name("test "),
 		app.Server(NewServer("server1"), NewServer("server2")),
 	)
 

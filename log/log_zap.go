@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-inspire/pkg/log/elog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -186,11 +185,6 @@ func init() {
 
 	var logger *zapLogger
 
-	defer func() {
-		if logger != nil {
-			elog.Init(logger.logger)
-		}
-	}()
 	file, err := filepath.Abs(zapConfig)
 	if err == nil {
 		logger, err = load(file)

@@ -8,7 +8,7 @@ import (
 )
 
 func Benchmark_Logger_Print(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -19,7 +19,7 @@ func Benchmark_Logger_Print(b *testing.B) {
 }
 
 func Benchmark_Logger_Print_With3StringgArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -30,7 +30,7 @@ func Benchmark_Logger_Print_With3StringgArgs(b *testing.B) {
 }
 
 func Benchmark_Logger_Print_With5StringArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -41,7 +41,7 @@ func Benchmark_Logger_Print_With5StringArgs(b *testing.B) {
 }
 
 func Benchmark_Logger_Print_With3StringArgsAnd2IntArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -52,7 +52,7 @@ func Benchmark_Logger_Print_With3StringArgsAnd2IntArgs(b *testing.B) {
 }
 
 func Benchmark_Logger_Printf(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -63,7 +63,7 @@ func Benchmark_Logger_Printf(b *testing.B) {
 }
 
 func Benchmark_Logger_Printf_With2StringArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -74,7 +74,7 @@ func Benchmark_Logger_Printf_With2StringArgs(b *testing.B) {
 }
 
 func Benchmark_Logger_Printf_With4StringArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -85,7 +85,7 @@ func Benchmark_Logger_Printf_With4StringArgs(b *testing.B) {
 }
 
 func Benchmark_Logger_Printf_With2StringArgsAnd2IntArgs(b *testing.B) {
-	logger := std.(*zapLogger)
+	logger := defaultAdapter
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {

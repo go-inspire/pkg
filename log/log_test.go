@@ -11,6 +11,7 @@ func TestCrit(t *testing.T) {
 	Debugf("test %d", 1)
 	Infof("test")
 	Print("test", "a")
+	Printw("test", "a")
 }
 
 func TestLevel(t *testing.T) {
@@ -21,13 +22,13 @@ func TestLevel(t *testing.T) {
 	encoderCfg.TimeKey = ""
 
 	logger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.NewConsoleEncoder(encoderCfg),
 		zapcore.Lock(os.Stdout),
 		atom,
 	))
 	defer logger.Sync()
 
-	logger.Info("info logging enabled")
+	logger.Info("", zap.Any("msg", "info logging enabled"))
 
 	atom.SetLevel(zap.ErrorLevel)
 	logger.Info("info logging disabled")
@@ -37,13 +38,13 @@ func TestLevel(t *testing.T) {
 
 func TestSetLevel(t *testing.T) {
 
-	log1 := std
+	log1 := defaultAdapter
 	defer log1.Flush()
-	dlog := std.Named("debug").SetLevel(DebugLevel)
+	dlog := Named("debug").SetLevel(DebugLevel)
 	defer dlog.Flush()
-	ilog := std.Named("info").SetLevel(InfoLevel)
+	ilog := Named("info").SetLevel(InfoLevel)
 	defer ilog.Flush()
-	wlog := std.Named("warn").SetLevel(WarnLevel)
+	wlog := Named("warn").SetLevel(WarnLevel)
 	defer wlog.Flush()
 
 	log1.Debug("Debug logging enabled")

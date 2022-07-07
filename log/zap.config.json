@@ -8,6 +8,7 @@
   },
   "encoding": "console",
   "outputPaths": [
+    "stdout"
   ],
   "errorOutputPaths": [
     "stderr"

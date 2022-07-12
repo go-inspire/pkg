@@ -75,6 +75,7 @@ func init() {
 	defer func() {
 		if logger != nil {
 			SetDefaultLogger(logger)
+			zap.RedirectStdLog(logger.log)
 		}
 	}()
 
@@ -140,7 +141,7 @@ func watch(path string) error {
 				return nil
 			}
 			fmt.Println("event:", event)
-			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove {
+			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Rename == fsnotify.Rename {
 				fmt.Print("modified file:", event.Name)
 				logger, err := buildFrom(path)
 				if err != nil {

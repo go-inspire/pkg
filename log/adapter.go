@@ -56,7 +56,7 @@ func (la *Adapter) Enabled(l Level) bool {
 	return la.Level().Enabled(l)
 }
 
-// Info uses fmt.Sprint to construct and logger a message.
+// Print uses fmt.Sprint to construct and logger a message.
 func (la *Adapter) Print(args ...interface{}) {
 	if la.Enabled(InfoLevel) {
 		la.logger.Log(InfoLevel, sprint(args...))
@@ -64,7 +64,7 @@ func (la *Adapter) Print(args ...interface{}) {
 
 }
 
-// Infof uses fmt.Sprintf to logger a templated message.
+// Printf uses fmt.Sprintf to logger a templated message.
 func (la *Adapter) Printf(msg string, args ...interface{}) {
 	if la.Enabled(InfoLevel) {
 		la.logger.Log(InfoLevel, fmt.Sprintf(msg, args...))

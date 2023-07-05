@@ -2,8 +2,8 @@
 // +build !amd64
 
 /*
- * Copyright 2022 The tpool Authors. All rights reserved.
- * Use of this source code is governed by a GNU-style
+ * Copyright 2023 Enoch <lanxenet@gmail.com>. All rights reserved.
+ * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
 

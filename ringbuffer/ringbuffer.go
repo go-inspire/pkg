@@ -1,10 +1,10 @@
 /*
- * Copyright 2022 Enoch <lanxenet@gmail.com>. All rights reserved.
+ * Copyright 2023 Enoch <lanxenet@gmail.com>. All rights reserved.
  * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
 
-//Package ringbuffer is simple ring (circular) buffer implementation.
+// Package ringbuffer is simple ring (circular) buffer implementation.
 package ringbuffer
 
 import "fmt"

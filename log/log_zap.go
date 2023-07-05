@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Enoch <lanxenet@gmail.com>. All rights reserved.
+ * Copyright 2023 Enoch <lanxenet@gmail.com>. All rights reserved.
  * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
@@ -42,24 +42,24 @@ func newZapLogger(cfg ZapConfig) *zapLogger {
 }
 
 func (l *zapLogger) Log(level Level, msg string, keyvals ...interface{}) {
-	var data []zap.Field
+	var fields []zap.Field
 	for i := 0; i < len(keyvals); i += 2 {
-		data = append(data, zap.Any(fmt.Sprint(keyvals[i]), keyvals[i+1]))
+		fields = append(fields, zap.Any(fmt.Sprint(keyvals[i]), keyvals[i+1]))
 	}
 
 	switch level {
 	case DebugLevel:
-		l.log.Debug(msg, data...)
+		l.log.Debug(msg, fields...)
 	case InfoLevel:
-		l.log.Info(msg, data...)
+		l.log.Info(msg, fields...)
 	case WarnLevel:
-		l.log.Warn(msg, data...)
+		l.log.Warn(msg, fields...)
 	case PanicLevel:
-		l.log.Panic(msg, data...)
+		l.log.Panic(msg, fields...)
 	case ErrorLevel:
-		l.log.Error(msg, data...)
+		l.log.Error(msg, fields...)
 	case FatalLevel:
-		l.log.Fatal(msg, data...)
+		l.log.Fatal(msg, fields...)
 	}
 }
 

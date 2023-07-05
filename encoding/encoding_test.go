@@ -1,3 +1,9 @@
+/*
+ * Copyright 2023 Enoch <lanxenet@gmail.com>. All rights reserved.
+ * Use of this source code is governed by a MIT style
+ * license that can be found in the LICENSE file.
+ */
+
 package encoding
 
 import (
@@ -75,8 +81,8 @@ func TestMarshalJSON(t *testing.T) {
 			expect: `{"a":"a","b":"b","c":"c"}`,
 		},
 		{
-			input:  &testData.TestModel{Id: 1, Name: "tpool", Hobby: []string{"1", "2"}},
-			expect: `{"id":"1","name":"tpool","hobby":["1","2"],"attrs":{}}`,
+			input:  &testData.TestModel{Id: 1, Name: "inspire", Hobby: []string{"1", "2"}},
+			expect: `{"id":"1","name":"inspire","hobby":["1","2"],"attrs":{}}`,
 		},
 		{
 			input:  &mock{value: Gopher},
@@ -116,11 +122,11 @@ func TestUnmarshalJSON(t *testing.T) {
 			expect: &p,
 		},
 		{
-			input:  `{"id":"1","name":"tpool","hobby":["1","2"],"attrs":{}}`,
+			input:  `{"id":"1","name":"inspire","hobby":["1","2"],"attrs":{}}`,
 			expect: &p2,
 		},
 		{
-			input:  `{"id":1,"name":"tpool","hobby":["1","2"]}`,
+			input:  `{"id":1,"name":"inspire","hobby":["1","2"]}`,
 			expect: &p3,
 		},
 		{

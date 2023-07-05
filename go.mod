@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/bytedance/sonic v1.3.3
 	github.com/fsnotify/fsnotify v1.5.4
-	github.com/goccy/go-json v0.9.8
+	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.2.0
 	github.com/json-iterator/go v1.1.12
 	go.uber.org/zap v1.16.0

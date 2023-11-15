@@ -7,11 +7,15 @@
 package log
 
 import (
+	"context"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io"
 )
 
 type Level = zapcore.Level
+
+type AtomicLevel = zap.AtomicLevel
 
 const (
 	// DebugLevel logs are typically voluminous, and are usually disabled in
@@ -35,5 +39,14 @@ const (
 type Logger interface {
 	io.Closer
 
-	Log(level Level, msg string, keyvals ...interface{})
+	Log(ctx context.Context, level Level, msg string, keyValues ...interface{})
+}
+
+var NopLogger Logger = nopLogger{}
+
+type nopLogger struct{}
+
+func (nopLogger) Log(context.Context, Level, string, ...interface{}) {}
+func (nopLogger) Close() error {
+	return nil
 }

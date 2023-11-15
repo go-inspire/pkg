@@ -7,6 +7,7 @@
 package log
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
@@ -41,10 +42,12 @@ func newZapLogger(cfg ZapConfig) *zapLogger {
 	}
 }
 
-func (l *zapLogger) Log(level Level, msg string, keyvals ...interface{}) {
+func (l *zapLogger) Log(_ context.Context, level Level, msg string, keyValues ...interface{}) {
 	var fields []zap.Field
-	for i := 0; i < len(keyvals); i += 2 {
-		fields = append(fields, zap.Any(fmt.Sprint(keyvals[i]), keyvals[i+1]))
+	var f zap.Field
+	for len(keyValues) > 0 {
+		f, keyValues = keyValuesToField(keyValues)
+		fields = append(fields, f)
 	}
 
 	switch level {
@@ -67,6 +70,24 @@ func (l *zapLogger) Close() error {
 	return l.log.Sync()
 }
 
+const badKey = "!BADKEY"
+
+func keyValuesToField(args []interface{}) (zap.Field, []interface{}) {
+	switch x := args[0].(type) {
+	case string:
+		if len(args) == 1 {
+			return zap.String(badKey, x), nil
+		}
+		return zap.Any(x, args[1]), args[2:]
+
+	case zap.Field:
+		return x, args[1:]
+
+	default:
+		return zap.Any(badKey, x), args[1:]
+	}
+}
+
 // 1. 读 zap.config.json 配置文件
 // 2. 读配置失败后读环境变量配置 zapLogger
 func init() {
@@ -82,6 +103,10 @@ func init() {
 	zapConfig := "zap.config.json"
 	if val, ok := os.LookupEnv("LOG_ZAP_CONFIG"); ok {
 		zapConfig = val
+	}
+
+	if _, err := os.Stat(zapConfig); os.IsNotExist(err) {
+		return
 	}
 
 	file, err := filepath.Abs(zapConfig)
@@ -119,10 +144,6 @@ func init() {
 		config.EncoderConfig = zap.NewDevelopmentEncoderConfig()
 	}
 
-	if val := os.Getenv("LOG_FILE"); val != "" {
-		logfile, _ := filepath.Abs(val)
-		config.OutputPaths = append(config.OutputPaths, logfile)
-	}
 	logger = newZapLogger(ZapConfig{Config: config})
 }
 
@@ -177,7 +198,7 @@ func buildFrom(file string) (*zapLogger, error) {
 	}
 
 	logger := newZapLogger(config)
-	SetConfig(LogConfig{
+	SetConfig(Config{
 		DefaultLevel: config.Level.Level(),
 		Named:        config.Named,
 	})

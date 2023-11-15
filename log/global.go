@@ -13,12 +13,12 @@ import (
 
 var (
 	defaultAdapter *Adapter
-	cfg            = LogConfig{DefaultLevel: InfoLevel, Named: make(map[string]Level)}
+	cfg            = Config{DefaultLevel: InfoLevel, Named: make(map[string]Level)}
 	adapters       = make(map[string]*Adapter)
 	mu             sync.Mutex
 )
 
-type LogConfig struct {
+type Config struct {
 	DefaultLevel Level            `json:"level" yaml:"level"`
 	Named        map[string]Level `json:"named" yaml:"named"`
 }
@@ -41,7 +41,7 @@ func Named(s string) *Adapter {
 	return a
 }
 
-func SetConfig(config LogConfig) {
+func SetConfig(config Config) {
 	mu.Lock()
 	defer mu.Unlock()
 

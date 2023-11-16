@@ -90,24 +90,14 @@ func keyValuesToField(args []interface{}) (zap.Field, []interface{}) {
 
 // 1. 读 zap.config.json 配置文件
 // 2. 读配置失败后读环境变量配置 zapLogger
-func init() {
+func initZapLogger(zapConfig string, lvl Level) Logger {
 	var logger *zapLogger
 
 	defer func() {
 		if logger != nil {
-			SetDefaultLogger(logger)
 			zap.RedirectStdLog(logger.log)
 		}
 	}()
-
-	zapConfig := "zap.config.json"
-	if val, ok := os.LookupEnv("LOG_ZAP_CONFIG"); ok {
-		zapConfig = val
-	}
-
-	if _, err := os.Stat(zapConfig); os.IsNotExist(err) {
-		return
-	}
 
 	file, err := filepath.Abs(zapConfig)
 	if err == nil {
@@ -122,19 +112,12 @@ func init() {
 				}
 			}(file)
 		}
+		return logger
 
 	} //允许配置不存在或者配置错误
 
-	if logger != nil { //说明从配置初始化日志成功
-		return
-	}
-
 	config := zap.NewProductionConfig()
-	if val := os.Getenv("LOG_LEVEL"); len(val) > 0 {
-		if err := config.Level.UnmarshalText([]byte(val)); err != nil {
-			fmt.Printf("parse %s to zapcore.Level fail\n", val)
-		}
-	}
+	config.Level.SetLevel(lvl)
 	config.Encoding = "console"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
@@ -145,6 +128,7 @@ func init() {
 	}
 
 	logger = newZapLogger(ZapConfig{Config: config})
+	return logger
 }
 
 func watch(path string) error {

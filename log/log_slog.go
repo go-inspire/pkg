@@ -8,7 +8,6 @@ package log
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 )
@@ -89,31 +88,14 @@ func (l *slogLogger) Close() error {
 	return nil
 }
 
-func init() {
-	var logger *slogLogger
-
-	defer func() {
-		if logger != nil {
-			SetDefaultLogger(logger)
-		}
-	}()
-
-	var lvl Level
-	if val := os.Getenv("LOG_LEVEL"); len(val) > 0 {
-		if err := lvl.UnmarshalText([]byte(val)); err != nil {
-			fmt.Printf("parse %s to zapcore.Level fail\n", val)
-		}
-	}
-	debug := os.Getenv("DEBUG")
-	if len(debug) > 0 {
-		lvl = DebugLevel
-	}
-
-	logger = newSlogLogger(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+func initSlogLogger(lvl Level) Logger {
+	logger := newSlogLogger(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource:   false,
 		ReplaceAttr: customLevel,
 		Level:       toSlogLevel(lvl),
 	}))
+
+	return logger
 }
 
 func toSlogLevel(l Level) slog.Level {

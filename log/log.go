@@ -46,7 +46,7 @@ var NopLogger Logger = nopLogger{}
 
 type nopLogger struct{}
 
-func (nopLogger) Log(context.Context, Level, string, ...interface{}) {}
+func (nopLogger) Log(ctx context.Context, level Level, msg string, keyValues ...interface{}) {}
 func (nopLogger) Close() error {
 	return nil
 }

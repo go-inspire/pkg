@@ -14,7 +14,6 @@ import (
 	"github.com/bytedance/sonic"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"log"
 	"reflect"
 )
 
@@ -33,7 +32,7 @@ var (
 )
 
 func init() {
-	log.Info("Use sonic JSON library")
+	//log.Info("Use sonic JSON library")
 }
 
 func MarshalFunc() func(v interface{}) ([]byte, error) {

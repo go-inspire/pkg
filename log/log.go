@@ -13,8 +13,10 @@ import (
 	"io"
 )
 
+// Level is a logging priority. Higher levels are more important.
 type Level = zapcore.Level
 
+// AtomicLevel is an atomically changeable, dynamic logging level. It lets you
 type AtomicLevel = zap.AtomicLevel
 
 const (
@@ -39,9 +41,11 @@ const (
 type Logger interface {
 	io.Closer
 
+	// Log logs a message at a given level.
 	Log(ctx context.Context, level Level, msg string, keyValues ...interface{})
 }
 
+// NopLogger is a logger that does nothing.
 var NopLogger Logger = nopLogger{}
 
 type nopLogger struct{}

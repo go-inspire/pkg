@@ -11,6 +11,7 @@ import (
 	"os"
 )
 
+// SetDefaultLogger set default logger.
 func init() {
 	var logger Logger
 	defer func() {

@@ -64,17 +64,23 @@ var ctx = context.Background()
 
 // Print uses fmt.Sprint to construct and logger a message.
 func (la *Adapter) Print(args ...interface{}) {
-	la.Info(args...)
+	la.output(ctx, InfoLevel, func(ctx context.Context, level Level) {
+		la.logger.Log(ctx, level, sprint(args...))
+	})
 }
 
 // Printf uses fmt.Sprintf to logger a templated message.
 func (la *Adapter) Printf(msg string, args ...interface{}) {
-	la.Infof(msg, args...)
+	la.output(ctx, InfoLevel, func(ctx context.Context, level Level) {
+		la.logger.Log(ctx, level, sprintf(msg, args...))
+	})
 }
 
 // Printw uses key,value to construct and logger a message.
 func (la *Adapter) Printw(keyvals ...interface{}) {
-	la.Infow(keyvals...)
+	la.output(ctx, InfoLevel, func(ctx context.Context, level Level) {
+		la.logger.Log(ctx, level, "", keyvals...)
+	})
 }
 
 // Debug uses fmt.Sprint to construct and logger a message.

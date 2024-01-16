@@ -32,15 +32,13 @@ func init() {
 			fmt.Printf("parse %s to zapcore.Level fail\n", val)
 		}
 	}
-	debug := os.Getenv("DEBUG")
-	if len(debug) > 0 {
-		lvl = DebugLevel
-	}
 
 	//如果 zap 配置文件不存在，则使用 slog
 	if _, err := os.Stat(zapConfig); os.IsNotExist(err) {
 		logger = initSlogLogger(lvl)
+		fmt.Println("use slog logger as default logger")
 	} else {
 		logger = initZapLogger(zapConfig, lvl)
+		fmt.Println("use zap logger as default logger")
 	}
 }

@@ -31,7 +31,7 @@ type zapLogger struct {
 }
 
 func newZapLogger(cfg ZapConfig) *zapLogger {
-	logger, err := cfg.Build(zap.AddCallerSkip(2))
+	logger, err := cfg.Build(zap.AddCallerSkip(5))
 	if err != nil {
 		fmt.Printf("zap.Config.Build[%v] fail\n", cfg)
 		return nil
@@ -121,8 +121,7 @@ func initZapLogger(zapConfig string, lvl Level) Logger {
 	config.Encoding = "console"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	debug := os.Getenv("DEBUG")
-	if debug != "" {
+	if val, ok := os.LookupEnv("DEBUG"); ok && val != "" {
 		config.Level.SetLevel(zapcore.DebugLevel)
 		config.EncoderConfig = zap.NewDevelopmentEncoderConfig()
 	}

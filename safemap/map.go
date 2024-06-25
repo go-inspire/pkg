@@ -64,11 +64,20 @@ func (sm *SafeMap[T]) Keys() []string {
 func (sm *SafeMap[T]) Range(f func(key string, value T) bool) {
 	sm.l.RLock()
 	defer sm.l.RUnlock()
+
 	for key, value := range sm.m {
 		if !f(key, value) {
 			return
 		}
 	}
+}
+
+func (sm *SafeMap[T]) Len() int {
+	sm.l.RLock()
+	defer sm.l.RUnlock()
+
+	return len(sm.m)
+
 }
 
 // SharedSafeMap is a map that can be safely shared by multiple goroutines.
@@ -119,6 +128,15 @@ func (sm *SharedSafeMap[T]) Range(f func(key string, value T) bool) {
 	for _, bucket := range sm.buckets {
 		bucket.Range(f)
 	}
+}
+
+// Len returns the number of elements in the map.
+func (sm *SharedSafeMap[T]) Len() int {
+	n := 0
+	for _, bucket := range sm.buckets {
+		n += bucket.Len()
+	}
+	return n
 }
 
 func share(key string, buckets int) int {

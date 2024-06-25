@@ -31,7 +31,7 @@ type zapLogger struct {
 }
 
 func newZapLogger(cfg ZapConfig) *zapLogger {
-	logger, err := cfg.Build(zap.AddCallerSkip(5))
+	logger, err := cfg.Build(zap.AddCallerSkip(5), zap.AddStacktrace(zapcore.ErrorLevel))
 	if err != nil {
 		fmt.Printf("zap.Config.Build[%v] fail\n", cfg)
 		return nil

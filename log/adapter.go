@@ -138,7 +138,7 @@ func (la *Adapter) Warn(args ...interface{}) {
 // Warnf uses fmt.Sprintf to logger a templated message.
 func (la *Adapter) Warnf(msg string, args ...interface{}) {
 	la.output(ctx, WarnLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprintf(msg, args...))
+		la.logger.Log(ctx, level, sprintf(msg, args...))
 	})
 }
 
@@ -161,7 +161,7 @@ func (la *Adapter) Error(args ...interface{}) {
 // Errorf uses fmt.Sprintf to logger a templated message.
 func (la *Adapter) Errorf(msg string, args ...interface{}) {
 	la.output(ctx, ErrorLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprintf(msg, args...))
+		la.logger.Log(ctx, level, sprintf(msg, args...))
 	})
 }
 
@@ -184,7 +184,7 @@ func (la *Adapter) Panic(args ...interface{}) {
 // Panicf uses fmt.Sprintf to logger a templated message, then panics.
 func (la *Adapter) Panicf(msg string, args ...interface{}) {
 	la.output(ctx, PanicLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprintf(msg, args...))
+		la.logger.Log(ctx, level, sprintf(msg, args...))
 	})
 
 	panic(fmt.Sprintf(msg, args...))
@@ -210,7 +210,7 @@ func (la *Adapter) Fatal(args ...interface{}) {
 // Fatalf uses fmt.Sprintf to logger a templated message, then calls os.Exit.
 func (la *Adapter) Fatalf(msg string, args ...interface{}) {
 	la.output(ctx, FatalLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprintf(msg, args...))
+		la.logger.Log(ctx, level, sprintf(msg, args...))
 	})
 	os.Exit(1)
 }

@@ -131,7 +131,7 @@ func (la *Adapter) Infow(keyvals ...interface{}) {
 // Warn uses fmt.Sprint to construct and logger a message.
 func (la *Adapter) Warn(args ...interface{}) {
 	la.output(ctx, WarnLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprint(args...))
+		la.logger.Log(ctx, level, sprint(args...))
 	})
 }
 
@@ -153,7 +153,7 @@ func (la *Adapter) Warnw(keyvals ...interface{}) {
 // Error uses fmt.Sprint to construct and logger a message.
 func (la *Adapter) Error(args ...interface{}) {
 	la.output(ctx, ErrorLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprint(args...))
+		la.logger.Log(ctx, level, sprint(args...))
 	})
 
 }
@@ -175,7 +175,7 @@ func (la *Adapter) Errorw(keyvals ...interface{}) {
 // Panic uses fmt.Sprint to construct and logger a message, then panics.
 func (la *Adapter) Panic(args ...interface{}) {
 	la.output(ctx, PanicLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprint(args...))
+		la.logger.Log(ctx, level, sprint(args...))
 	})
 
 	panic(fmt.Sprint(args...))
@@ -201,7 +201,7 @@ func (la *Adapter) Panicw(keyvals ...interface{}) {
 // Fatal uses fmt.Sprint to construct and logger a message, then calls os.Exit.
 func (la *Adapter) Fatal(args ...interface{}) {
 	la.output(ctx, FatalLevel, func(ctx context.Context, level Level) {
-		la.logger.Log(ctx, level, "", sprint(args...))
+		la.logger.Log(ctx, level, sprint(args...))
 	})
 
 	os.Exit(1)

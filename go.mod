@@ -3,7 +3,7 @@ module github.com/go-inspire/pkg
 go 1.21
 
 require (
-	github.com/bytedance/gopkg v0.0.0-20240531030433-5df24c0168e2
+	github.com/bytedance/gopkg v0.0.0-20220118071334-3db87571198b
 	github.com/bytedance/sonic v1.10.2
 	github.com/casbin/casbin/v2 v2.81.0
 	github.com/fsnotify/fsnotify v1.7.0

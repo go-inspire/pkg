@@ -7,10 +7,8 @@
 package safemap
 
 import (
-	"hash/crc32"
 	"runtime"
 	"sync"
-	"unsafe"
 )
 
 // SafeMap 多线程安全的 Map
@@ -137,15 +135,4 @@ func (sm *SharedSafeMap[T]) Len() int {
 		n += bucket.Len()
 	}
 	return n
-}
-
-func share(key string, buckets int) int {
-	hash := crc32.ChecksumIEEE(String2Bytes(key))
-	i := hash % uint32(buckets)
-	return int(i)
-}
-
-// String2Bytes zero-copy string convert to slice
-func String2Bytes(s string) []byte {
-	return unsafe.Slice(unsafe.StringData(s), len(s))
 }

@@ -6,7 +6,9 @@
 
 package safemap
 
-import "sync"
+import (
+	"sync"
+)
 
 type HashSet[T comparable] map[T]struct{}
 
@@ -132,3 +134,26 @@ func (s *SafeHashSet[T]) Len() int {
 
 	return len(s.m)
 }
+
+//
+//// SharedSafeHashSet is a map that can be safely shared by multiple goroutines.
+//type SharedSafeHashSet[T comparable] struct {
+//	buckets []*SafeHashSet[T]
+//}
+//
+//// NewSharedSafeHashSet returns an empty SharedSafeHashSet
+//func NewSharedSafeHashSet[T comparable]() *SharedSafeHashSet[T] {
+//	n := runtime.GOMAXPROCS(0)
+//	buckets := make([]*SafeHashSet[T], n)
+//	for i := range buckets {
+//		buckets[i] = NewSafeHashSet[T]()
+//	}
+//	return &SharedSafeHashSet[T]{buckets: buckets}
+//}
+//
+//// Add adds the specified element to this set
+//func (s *SharedSafeHashSet[T]) Add(value T) bool {
+//
+//	i := share(value, len(s.buckets))
+//	return s.buckets[uint64(hash(value))%uint64(len(s.buckets))].Add(value)
+//}

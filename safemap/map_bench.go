@@ -9,6 +9,7 @@ package safemap
 import (
 	"github.com/bytedance/gopkg/lang/fastrand"
 	"math"
+	"strconv"
 	"testing"
 )
 
@@ -16,15 +17,15 @@ const initSize = 1 << 10 // for `load` `1Delete9Store90Load` `1Range9Delete90Sto
 const randM = math.MaxInt
 
 type Map interface {
-	Set(key int, val struct{})
-	Get(key int) (struct{}, bool)
-	Del(key int)
+	Set(key string, val struct{})
+	Get(key string) (struct{}, bool)
+	Del(key string)
 }
 
 // benchmarkMap 大量并发读写的场景
 func benchmarkMap(b *testing.B, hm Map, reads, writes uint32) {
 	for i := 0; i < initSize; i++ {
-		hm.Set(fastrand.Intn(randM), struct{}{})
+		hm.Set(strconv.Itoa(fastrand.Intn(randM)), struct{}{})
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -32,9 +33,9 @@ func benchmarkMap(b *testing.B, hm Map, reads, writes uint32) {
 		for pb.Next() {
 			u := fastrand.Uint32n(reads + writes)
 			if u < writes {
-				hm.Set(fastrand.Intn(randM), struct{}{})
+				hm.Set(strconv.Itoa(fastrand.Intn(randM)), struct{}{})
 			} else {
-				_, _ = hm.Get(fastrand.Intn(randM))
+				_, _ = hm.Get(strconv.Itoa(fastrand.Intn(randM)))
 			}
 		}
 	})

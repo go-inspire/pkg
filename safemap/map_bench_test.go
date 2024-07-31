@@ -12,49 +12,19 @@ import (
 	"testing"
 )
 
-type OriginWithRWLock struct {
-	m map[int]struct{}
-	l sync.RWMutex
-}
-
-func (o *OriginWithRWLock) Get(key int) (struct{}, bool) {
-	o.l.RLock()
-	v, ok := o.m[key]
-	o.l.RUnlock()
-	return v, ok
-}
-func (o *OriginWithRWLock) Set(key int, value struct{}) {
-	o.l.Lock()
-	o.m[key] = value
-	o.l.Unlock()
-}
-
-func (o *OriginWithRWLock) Del(key int) {
-	o.l.Lock()
-	delete(o.m, key)
-	o.l.Unlock()
-}
-
-func NewOriginWithRWLock() *OriginWithRWLock {
-	return &OriginWithRWLock{
-		m: make(map[int]struct{}),
-		l: sync.RWMutex{},
-	}
-}
-
 type SyncMap struct {
 	m sync.Map
 }
 
-func (o *SyncMap) Get(key int) (struct{}, bool) {
+func (o *SyncMap) Get(key string) (struct{}, bool) {
 	_, ok := o.m.Load(key)
 	return struct{}{}, ok
 }
-func (o *SyncMap) Set(key int, value struct{}) {
+func (o *SyncMap) Set(key string, value struct{}) {
 	o.m.Store(key, value)
 }
 
-func (o *SyncMap) Del(key int) {
+func (o *SyncMap) Del(key string) {
 	o.m.Delete(key)
 }
 
@@ -63,24 +33,24 @@ func NewSyncMap() *SyncMap {
 }
 
 type SkipMap struct {
-	m *skipmap.IntMap
+	m *skipmap.StringMap
 }
 
-func (o *SkipMap) Get(key int) (struct{}, bool) {
+func (o *SkipMap) Get(key string) (struct{}, bool) {
 	_, ok := o.m.Load(key)
 	return struct{}{}, ok
 }
-func (o *SkipMap) Set(key int, value struct{}) {
+func (o *SkipMap) Set(key string, value struct{}) {
 	o.m.Store(key, value)
 }
 
-func (o *SkipMap) Del(key int) {
+func (o *SkipMap) Del(key string) {
 	o.m.Delete(key)
 }
 
 func NewSkipMap() *SkipMap {
 	return &SkipMap{
-		m: skipmap.NewInt(),
+		m: skipmap.NewString(),
 	}
 }
 
@@ -98,8 +68,8 @@ func benchmarkMaps(b *testing.B, reads, writes uint32) {
 		benchmarkMap(b, hm, writes, reads)
 	})
 
-	b.Run("OriginWithRWLock", func(b *testing.B) {
-		hm := NewOriginWithRWLock()
+	b.Run("SafeMap", func(b *testing.B) {
+		hm := NewSafeMap[struct{}]()
 		benchmarkMap(b, hm, writes, reads)
 	})
 

@@ -8,44 +8,19 @@ package safemap
 
 import (
 	"runtime"
-	"sync"
 	"testing"
 )
 
-type OriginWithRWLockShared struct {
-	shares []OriginWithRWLock
+// Load returns the value stored under the given key.
+func (sm *SharedSafeMap[T]) Get(key string) (T, bool) {
+	i := share(key, len(sm.buckets))
+	return sm.buckets[i].Get(key)
 }
 
-func (o *OriginWithRWLockShared) Get(key int) (struct{}, bool) {
-	i := share(key, len(o.shares))
-	return o.shares[i].Get(key)
-}
-func (o *OriginWithRWLockShared) Set(key int, value struct{}) {
-	i := share(key, len(o.shares))
-	o.shares[i].Set(key, value)
-}
-
-func (o *OriginWithRWLockShared) Del(key int) {
-	i := share(key, len(o.shares))
-	o.shares[i].Del(key)
-}
-
-func NewOriginWithRWLockShared() *OriginWithRWLockShared {
-	num := runtime.GOMAXPROCS(0)
-	shares := make([]OriginWithRWLock, 0, num)
-	for i := 0; i < num; i++ {
-		shares = append(shares, OriginWithRWLock{
-			m: make(map[int]struct{}),
-			l: sync.RWMutex{},
-		})
-	}
-	return &OriginWithRWLockShared{
-		shares: shares,
-	}
-}
-
-func share(key int, buckets int) int {
-	return key % buckets
+// Store stores the given value under the given key.
+func (sm *SharedSafeMap[T]) Set(key string, value T) {
+	i := share(key, len(sm.buckets))
+	sm.buckets[i].Set(key, value)
 }
 
 type SyncMapShared struct {
@@ -58,16 +33,16 @@ func NewSyncMapShared() *SyncMapShared {
 	}
 }
 
-func (o *SyncMapShared) Get(key int) (struct{}, bool) {
+func (o *SyncMapShared) Get(key string) (struct{}, bool) {
 	i := share(key, len(o.shares))
 	return o.shares[i].Get(key)
 }
-func (o *SyncMapShared) Set(key int, value struct{}) {
+func (o *SyncMapShared) Set(key string, value struct{}) {
 	i := share(key, len(o.shares))
 	o.shares[i].Set(key, value)
 }
 
-func (o *SyncMapShared) Del(key int) {
+func (o *SyncMapShared) Del(key string) {
 	i := share(key, len(o.shares))
 	o.shares[i].Del(key)
 }
@@ -86,13 +61,13 @@ func benchmarkShareMaps(b *testing.B, reads, writes uint32) {
 		benchmarkMap(b, hm, writes, reads)
 	})
 
-	b.Run("OriginWithRWLock", func(b *testing.B) {
-		hm := NewOriginWithRWLock()
+	b.Run("SafeMap", func(b *testing.B) {
+		hm := NewSafeMap[struct{}]()
 		benchmarkMap(b, hm, writes, reads)
 	})
 
-	b.Run("OriginWithRWLockShare", func(b *testing.B) {
-		hm := NewOriginWithRWLockShared()
+	b.Run("SharedSafeMap", func(b *testing.B) {
+		hm := NewSharedSafeMap[struct{}]()
 		benchmarkMap(b, hm, writes, reads)
 	})
 

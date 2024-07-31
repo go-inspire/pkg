@@ -31,7 +31,10 @@ type zapLogger struct {
 }
 
 func newZapLogger(cfg ZapConfig) *zapLogger {
-	logger, err := cfg.Build(zap.AddCallerSkip(5), zap.AddStacktrace(zapcore.ErrorLevel))
+	logger, err := cfg.Build(
+		zap.AddCallerSkip(5),
+		zap.AddStacktrace(zapcore.ErrorLevel),
+	)
 	if err != nil {
 		fmt.Printf("zap.Config.Build[%v] fail\n", cfg)
 		return nil
@@ -170,6 +173,15 @@ func buildFrom(file string) (*zapLogger, error) {
 		Config: zap.NewProductionConfig(),
 		Named:  make(map[string]Level),
 	}
+	//取最小的级别
+	minLevel := zapcore.DebugLevel
+	for _, v := range config.Named {
+		if v < minLevel {
+			minLevel = v
+		}
+	}
+	config.Level.SetLevel(minLevel)
+
 	fmt.Printf("Loading config: %v\n", file)
 	f, err := os.Open(file)
 	if err != nil {

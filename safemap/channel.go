@@ -12,10 +12,11 @@ import (
 	"runtime"
 )
 
-// SharedKey is a function that generates a key for a given value.
+// SharedKey 用于生成共享通道的 key, 以便将消息分组到不同的通道中.
 type SharedKey[T any] func(v T) string
 
-// SharedChannel 共享通道
+// SharedChannel 多 chan 的通道; 适用于多个 goroutine 同时向多个通道推送数据, 以及多个 goroutine 同时从多个通道拉取数据的场景.
+// 通过对消息进行分组处理的思路, 降低了 chan 的竞争, 提高了并发性能.
 type SharedChannel[T any] struct {
 	channels []chan T
 	key      SharedKey[T]
@@ -41,14 +42,15 @@ func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[
 	return &SharedChannel[T]{channels: channels, key: key}
 }
 
-// Push 推送到通道
+// Push 推送消息到通道
 func (c *SharedChannel[T]) Push(value T) {
 	key := c.key(value)
 	i := share(key, len(c.channels))
 	c.channels[i] <- value
 }
 
-// Pull 从通道拉取数据
+// Pull 从通道拉取数据; 启用 goroutine 同时处理多个通道, 通过 context 控制退出. 适用于处理多个通道的场景.
+// 调用该方法会 block 当前 goroutine, 直到所有通道处理完毕, 或者 context 被取消, 或者 Close 被调用.
 func (c *SharedChannel[T]) Pull(f func(value T) bool) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	pullFn := func(channel chan T) error {
@@ -73,6 +75,8 @@ func (c *SharedChannel[T]) Pull(f func(value T) bool) error {
 	return eg.Wait()
 }
 
+// PullContext 从通道拉取数据; 启用 goroutine 同时处理多个通道, 通过 context 控制退出. 适用于处理多个通道的场景.
+// 调用该方法会 block 当前 goroutine, 直到所有通道处理完毕, 或者 context 被取消, 或者 Close 被调用.
 func (c *SharedChannel[T]) PullContext(ctx context.Context, f func(value T) bool) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	pullFn := func(channel chan T) error {

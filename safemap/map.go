@@ -25,7 +25,7 @@ func NewSafeMap[T any]() *SafeMap[T] {
 	}
 }
 
-// Get returns the value stored under the given key.
+// Get 返回给定键的值
 func (sm *SafeMap[T]) Get(key string) (T, bool) {
 	sm.l.RLock()
 	value, ok := sm.m[key]
@@ -33,21 +33,21 @@ func (sm *SafeMap[T]) Get(key string) (T, bool) {
 	return value, ok
 }
 
-// Set stores the given value under the given key.
+// Set 设置给定键的值
 func (sm *SafeMap[T]) Set(key string, value T) {
 	sm.l.Lock()
 	sm.m[key] = value
 	sm.l.Unlock()
 }
 
-// Del deletes the value stored under the given key.
+// Del 删除给定键的值
 func (sm *SafeMap[T]) Del(key string) {
 	sm.l.Lock()
 	delete(sm.m, key)
 	sm.l.Unlock()
 }
 
-// Keys returns all keys in the map.
+// Keys 返回所有键
 func (sm *SafeMap[T]) Keys() []string {
 	sm.l.RLock()
 	keys := make([]string, 0, len(sm.m))
@@ -58,7 +58,7 @@ func (sm *SafeMap[T]) Keys() []string {
 	return keys
 }
 
-// Range calls the given function for each key-value pair in the map.
+// Range 对 Map 中的每个键值对调用给定的函数
 func (sm *SafeMap[T]) Range(f func(key string, value T) bool) {
 	sm.l.RLock()
 	defer sm.l.RUnlock()
@@ -70,6 +70,7 @@ func (sm *SafeMap[T]) Range(f func(key string, value T) bool) {
 	}
 }
 
+// Len 返回 Map 中的元素数量
 func (sm *SafeMap[T]) Len() int {
 	sm.l.RLock()
 	defer sm.l.RUnlock()
@@ -78,12 +79,12 @@ func (sm *SafeMap[T]) Len() int {
 
 }
 
-// SharedSafeMap is a map that can be safely shared by multiple goroutines.
+// SharedSafeMap 是一个可以安全地由多个 goroutine 共享的 map. 使用分片思路来实现.
 type SharedSafeMap[T any] struct {
 	buckets []*SafeMap[T]
 }
 
-// NewSharedSafeMap creates a new SharedSafeMap.
+// NewSharedSafeMap 创建一个新的 SharedSafeMap. 根据当前系统的 CPU 核心数创建对应数量的分片.
 func NewSharedSafeMap[T any]() *SharedSafeMap[T] {
 	n := runtime.GOMAXPROCS(0)
 	buckets := make([]*SafeMap[T], n)
@@ -94,25 +95,25 @@ func NewSharedSafeMap[T any]() *SharedSafeMap[T] {
 
 }
 
-// Load returns the value stored under the given key.
+// Load 返回给定键的值
 func (sm *SharedSafeMap[T]) Load(key string) (T, bool) {
 	i := share(key, len(sm.buckets))
 	return sm.buckets[i].Get(key)
 }
 
-// Store stores the given value under the given key.
+// Store 设置给定键的值
 func (sm *SharedSafeMap[T]) Store(key string, value T) {
 	i := share(key, len(sm.buckets))
 	sm.buckets[i].Set(key, value)
 }
 
-// Del deletes the value stored under the given key.
+// Del 删除给定键的值
 func (sm *SharedSafeMap[T]) Del(key string) {
 	i := share(key, len(sm.buckets))
 	sm.buckets[i].Del(key)
 }
 
-// Keys returns all keys in the map.
+// Keys 返回所有键
 func (sm *SharedSafeMap[T]) Keys() []string {
 	keys := make([]string, 0)
 	for _, bucket := range sm.buckets {
@@ -121,14 +122,14 @@ func (sm *SharedSafeMap[T]) Keys() []string {
 	return keys
 }
 
-// Range calls the given function for each key-value pair in the map.
+// Range 对 Map 中的每个键值对调用给定的函数
 func (sm *SharedSafeMap[T]) Range(f func(key string, value T) bool) {
 	for _, bucket := range sm.buckets {
 		bucket.Range(f)
 	}
 }
 
-// Len returns the number of elements in the map.
+// Len 返回 Map 中的元素数量
 func (sm *SharedSafeMap[T]) Len() int {
 	n := 0
 	for _, bucket := range sm.buckets {

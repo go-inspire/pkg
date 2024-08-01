@@ -10,27 +10,28 @@ import (
 	"sync"
 )
 
+// HashSet 通过 map 实现唯一性的集合, 非线程安全.
 type HashSet[T comparable] map[T]struct{}
 
-// NewHashSet returns an empty HashSet
+// NewHashSet 返回一个空的 HashSet
 func NewHashSet[T comparable]() HashSet[T] {
 	return make(map[T]struct{})
 }
 
-// NewHashSetWithSize returns an empty HashSet initialized with specific size
+// NewHashSetWithSize 返回一个空的 HashSet, 并初始化指定大小.
 func NewHashSetWithSize[T comparable](size int) HashSet[T] {
 	return make(map[T]struct{}, size)
 }
 
-// Add adds the specified element to this set
-// Always returns true due to the build-in map doesn't indicate caller whether the given element already exists
-// Reserves the return type for future extension
+// Add 将指定元素添加到此集合中
+// 由于内置 map 不会指示调用者给定元素是否已存在，因此总是返回 true
+// 保留返回类型以供将来扩展
 func (s HashSet[T]) Add(value T) bool {
 	s[value] = struct{}{}
 	return true
 }
 
-// Contains returns true if this set contains the specified element
+// Contains 如果此集合包含指定元素，则返回 true
 func (s HashSet[T]) Contains(value T) bool {
 	if _, ok := s[value]; ok {
 		return true
@@ -38,16 +39,13 @@ func (s HashSet[T]) Contains(value T) bool {
 	return false
 }
 
-// Remove removes the specified element from this set
-// Always returns true due to the build-in map doesn't indicate caller whether the given element already exists
-// Reserves the return type for future extension
+// Remove 从此集合中删除指定元素.
 func (s HashSet[T]) Remove(value T) bool {
 	delete(s, value)
 	return true
 }
 
-// Range calls f sequentially for each value present in the hashset.
-// If f returns false, range stops the iteration.
+// Range 为此集合中的每个值调用 f
 func (s HashSet[T]) Range(f func(value T) bool) {
 	for k := range s {
 		if !f(k) {
@@ -56,34 +54,32 @@ func (s HashSet[T]) Range(f func(value T) bool) {
 	}
 }
 
-// Len returns the number of elements of this set
+// Len 返回此集合的元素数量
 func (s HashSet[T]) Len() int {
 	return len(s)
 }
 
-// SafeHashSet is a thread-safe HashSet
+// SafeHashSet 是线程安全的 HashSet
 type SafeHashSet[T comparable] struct {
 	m map[T]struct{}
 	l sync.RWMutex
 }
 
-// NewSafeHashSet returns an empty HashSet
+// NewSafeHashSet 返回一个空的 SafeHashSet
 func NewSafeHashSet[T comparable]() *SafeHashSet[T] {
 	return &SafeHashSet[T]{
 		m: make(map[T]struct{}),
 	}
 }
 
-// NewSafeHashSetWithSize returns an empty HashSet initialized with specific size
+// NewSafeHashSetWithSize 返回一个空的 SafeHashSet, 并初始化指定大小.
 func NewSafeHashSetWithSize[T comparable](size int) *SafeHashSet[T] {
 	return &SafeHashSet[T]{
 		m: make(map[T]struct{}, size),
 	}
 }
 
-// Add adds the specified element to this set
-// Always returns true due to the build-in map doesn't indicate caller whether the given element already exists
-// Reserves the return type for future extension
+// Add 将指定元素添加到此集合中
 func (s *SafeHashSet[T]) Add(value T) bool {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -92,7 +88,7 @@ func (s *SafeHashSet[T]) Add(value T) bool {
 	return true
 }
 
-// Contains returns true if this set contains the specified element
+// Contains 如果此集合包含指定元素，则返回 true
 func (s *SafeHashSet[T]) Contains(value T) bool {
 	s.l.RLock()
 	defer s.l.RUnlock()
@@ -103,9 +99,7 @@ func (s *SafeHashSet[T]) Contains(value T) bool {
 	return false
 }
 
-// Remove removes the specified element from this set
-// Always returns true due to the build-in map doesn't indicate caller whether the given element already exists
-// Reserves the return type for future extension
+// Remove 从此集合中删除指定元素.
 func (s *SafeHashSet[T]) Remove(value T) bool {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -114,8 +108,7 @@ func (s *SafeHashSet[T]) Remove(value T) bool {
 	return true
 }
 
-// Range calls f sequentially for each value present in the hashset.
-// If f returns false, range stops the iteration.
+// Range 为此集合中的每个值调用 f
 func (s *SafeHashSet[T]) Range(f func(value T) bool) {
 	s.l.RLock()
 	defer s.l.RUnlock()
@@ -127,7 +120,7 @@ func (s *SafeHashSet[T]) Range(f func(value T) bool) {
 	}
 }
 
-// Len returns the number of elements of this set
+// Len 返回此集合的元素数量
 func (s *SafeHashSet[T]) Len() int {
 	s.l.RLock()
 	defer s.l.RUnlock()

@@ -7,20 +7,16 @@
 package safemap
 
 import (
-	"hash/maphash"
+	"github.com/zhangyunhao116/wyhash"
 	"unsafe"
 )
 
-var h maphash.Hash
-
 func hashString(key string) uint64 {
-	h.Reset()
-	_, _ = h.WriteString(key)
-	return h.Sum64()
+	return wyhash.Sum64String(key)
 }
 
-func share(key string, buckets int) int {
-	i := hashString(key) % uint64(buckets)
+func share(key string, shares int) int {
+	i := hashString(key) % uint64(shares)
 	return int(i)
 }
 

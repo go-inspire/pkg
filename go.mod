@@ -12,6 +12,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
 	github.com/upper/db/v4 v4.8.0
+	github.com/zhangyunhao116/wyhash v0.4.1-0.20220217162229-7d42996fa899
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.7.0
 	google.golang.org/protobuf v1.34.2
@@ -29,6 +30,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
+	github.com/zhangyunhao116/sbconv v0.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect

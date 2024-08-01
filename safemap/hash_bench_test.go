@@ -8,6 +8,7 @@ package safemap
 
 import (
 	"fmt"
+	wyhash0 "github.com/go-inspire/pkg/internal/wyhash"
 	"github.com/zhangyunhao116/wyhash"
 	"hash/fnv"
 	"hash/maphash"
@@ -67,6 +68,15 @@ func benchmarkHashString(h hasher, b *testing.B) {
 	}
 }
 
+type wyhasher struct{}
+
+func (wyhasher) Hash(data []byte, seed uint64) uint64 {
+	return wyhash0.Sum64WithSeed(data, seed)
+}
+func (wyhasher) HashString(data string, seed uint64) uint64 {
+	return wyhash0.Sum64StringWithSeed(data, seed)
+}
+
 type wyhasher1 struct{}
 
 func (wyhasher1) Hash(data []byte, seed uint64) uint64 {
@@ -116,6 +126,11 @@ func (m Maphash) HashString(data string, seed uint64) uint64 {
 }
 
 func BenchmarkHash(b *testing.B) {
+	b.Run("wyhash0", func(b *testing.B) {
+		benchmarkHash(wyhasher{}, b)
+		benchmarkHashString(wyhasher{}, b)
+	})
+
 	b.Run("wyhash1", func(b *testing.B) {
 		benchmarkHash(wyhasher1{}, b)
 		benchmarkHashString(wyhasher1{}, b)
@@ -126,11 +141,11 @@ func BenchmarkHash(b *testing.B) {
 		benchmarkHashString(wyhasher3{}, b)
 	})
 
-	b.Run("Fnv64a", func(b *testing.B) {
-		benchmarkHash(Fnv64a{}, b)
-		benchmarkHashString(Fnv64a{}, b)
-	})
-
+	//b.Run("Fnv64a", func(b *testing.B) {
+	//	benchmarkHash(Fnv64a{}, b)
+	//	benchmarkHashString(Fnv64a{}, b)
+	//})
+	//
 	b.Run("Maphash", func(b *testing.B) {
 		benchmarkHash(Maphash{}, b)
 		benchmarkHashString(Maphash{}, b)

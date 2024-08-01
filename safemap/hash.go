@@ -7,8 +7,7 @@
 package safemap
 
 import (
-	"github.com/zhangyunhao116/wyhash"
-	"unsafe"
+	"github.com/go-inspire/pkg/internal/wyhash"
 )
 
 func hashString(key string) uint64 {
@@ -18,9 +17,4 @@ func hashString(key string) uint64 {
 func share(key string, shares int) int {
 	i := hashString(key) % uint64(shares)
 	return int(i)
-}
-
-// String2Bytes zero-copy string convert to slice
-func String2Bytes(s string) []byte {
-	return unsafe.Slice(unsafe.StringData(s), len(s))
 }

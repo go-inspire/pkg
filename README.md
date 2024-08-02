@@ -19,6 +19,11 @@ go get -u github.com/go-inspire/pkg@main
 
 ```
 
+## 依赖
+
+- [github.com/bytedance/gopkg](https://github.com/bytedance/gopkg)
+
+
 ## 许可证
 
 `pkg` 采用 MIT 许可证。 详见 [LICENSE](./LICENSE) 文件。

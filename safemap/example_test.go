@@ -19,7 +19,7 @@ func ExampleNewSharedChannel() {
 	})
 
 	//监听消息, 相当于启动了多个 goroutine 来处理消息
-	_ = sc.PullContext(context.Background(), func(v int) bool {
+	_ = sc.Pull(context.Background(), func(v int) bool {
 		fmt.Println(v)
 		return true
 	})

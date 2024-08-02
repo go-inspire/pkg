@@ -16,7 +16,7 @@ import (
 type SharedKey[T any] func(v T) string
 
 // SharedChannel 多 chan 的通道; 适用于多个 goroutine 同时向多个通道推送数据, 以及多个 goroutine 同时从多个通道拉取数据的场景.
-// 通过对消息进行分组处理的思路, 降低了 chan 的竞争, 提高了并发性能.
+// 通过对消息进行分组处理的思路, 降低了 chan 的竞争, 提高并发性能.
 type SharedChannel[T any] struct {
 	channels []chan T
 	key      SharedKey[T]
@@ -51,35 +51,9 @@ func (c *SharedChannel[T]) Push(value T) {
 
 // Pull 从通道拉取数据; 启用 goroutine 同时处理多个通道, 通过 context 控制退出. 适用于处理多个通道的场景.
 // 调用该方法会 block 当前 goroutine, 直到所有通道处理完毕, 或者 context 被取消, 或者 Close 被调用.
-func (c *SharedChannel[T]) Pull(f func(value T) bool) error {
-	eg, ctx := errgroup.WithContext(context.Background())
-	pullFn := func(channel chan T) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return context.Cause(ctx)
-
-			case v := <-channel:
-				if !f(v) {
-					return nil
-				}
-			}
-		}
-	}
-
-	for _, channel := range c.channels {
-		eg.Go(func() error {
-			return pullFn(channel)
-		})
-	}
-	return eg.Wait()
-}
-
-// PullContext 从通道拉取数据; 启用 goroutine 同时处理多个通道, 通过 context 控制退出. 适用于处理多个通道的场景.
-// 调用该方法会 block 当前 goroutine, 直到所有通道处理完毕, 或者 context 被取消, 或者 Close 被调用.
-func (c *SharedChannel[T]) PullContext(ctx context.Context, f func(value T) bool) error {
+func (c *SharedChannel[T]) Pull(ctx context.Context, f func(value T) bool) error {
 	eg, ctx := errgroup.WithContext(ctx)
-	pullFn := func(channel chan T) error {
+	pullFn := func(channel <-chan T) error {
 		for {
 			select {
 			case <-ctx.Done():

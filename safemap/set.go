@@ -61,92 +61,47 @@ func (s HashSet[T]) Len() int {
 
 // SafeHashSet 是线程安全的 HashSet
 type SafeHashSet[T comparable] struct {
-	m map[T]struct{}
-	l sync.RWMutex
+	dirty sync.Map
 }
 
 // NewSafeHashSet 返回一个空的 SafeHashSet
 func NewSafeHashSet[T comparable]() *SafeHashSet[T] {
 	return &SafeHashSet[T]{
-		m: make(map[T]struct{}),
-	}
-}
-
-// NewSafeHashSetWithSize 返回一个空的 SafeHashSet, 并初始化指定大小.
-func NewSafeHashSetWithSize[T comparable](size int) *SafeHashSet[T] {
-	return &SafeHashSet[T]{
-		m: make(map[T]struct{}, size),
+		dirty: sync.Map{},
 	}
 }
 
 // Add 将指定元素添加到此集合中
 func (s *SafeHashSet[T]) Add(value T) bool {
-	s.l.Lock()
-	defer s.l.Unlock()
-
-	s.m[value] = struct{}{}
-	return true
+	_, loaded := s.dirty.LoadOrStore(value, struct{}{})
+	return !loaded
 }
 
 // Contains 如果此集合包含指定元素，则返回 true
 func (s *SafeHashSet[T]) Contains(value T) bool {
-	s.l.RLock()
-	defer s.l.RUnlock()
-
-	if _, ok := s.m[value]; ok {
-		return true
-	}
-	return false
+	_, loaded := s.dirty.Load(value)
+	return loaded
 }
 
 // Remove 从此集合中删除指定元素.
 func (s *SafeHashSet[T]) Remove(value T) bool {
-	s.l.Lock()
-	defer s.l.Unlock()
-
-	delete(s.m, value)
-	return true
+	_, loaded := s.dirty.LoadAndDelete(value)
+	return loaded
 }
 
 // Range 为此集合中的每个值调用 f
 func (s *SafeHashSet[T]) Range(f func(value T) bool) {
-	s.l.RLock()
-	defer s.l.RUnlock()
-
-	for k := range s.m {
-		if !f(k) {
-			break
-		}
-	}
+	s.dirty.Range(func(key, _ interface{}) bool {
+		return f(key.(T))
+	})
 }
 
 // Len 返回此集合的元素数量
 func (s *SafeHashSet[T]) Len() int {
-	s.l.RLock()
-	defer s.l.RUnlock()
-
-	return len(s.m)
+	l := 0
+	s.dirty.Range(func(_, _ interface{}) bool {
+		l++
+		return true
+	})
+	return l
 }
-
-//
-//// SharedSafeHashSet is a map that can be safely shared by multiple goroutines.
-//type SharedSafeHashSet[T comparable] struct {
-//	buckets []*SafeHashSet[T]
-//}
-//
-//// NewSharedSafeHashSet returns an empty SharedSafeHashSet
-//func NewSharedSafeHashSet[T comparable]() *SharedSafeHashSet[T] {
-//	n := runtime.GOMAXPROCS(0)
-//	buckets := make([]*SafeHashSet[T], n)
-//	for i := range buckets {
-//		buckets[i] = NewSafeHashSet[T]()
-//	}
-//	return &SharedSafeHashSet[T]{buckets: buckets}
-//}
-//
-//// Add adds the specified element to this set
-//func (s *SharedSafeHashSet[T]) Add(value T) bool {
-//
-//	i := share(value, len(s.buckets))
-//	return s.buckets[uint64(hash(value))%uint64(len(s.buckets))].Add(value)
-//}

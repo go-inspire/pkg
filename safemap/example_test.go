@@ -19,13 +19,17 @@ func ExampleNewSharedChannel() {
 	})
 
 	//监听消息, 相当于启动了多个 goroutine 来处理消息
-	_ = sc.Pull(context.Background(), func(v int) bool {
-		fmt.Println(v)
-		return true
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		_ = sc.Pull(ctx, func(v int) bool {
+			fmt.Println(v)
+			return true
+		})
+	}()
 
 	//推送消息
 	sc.Push(1)
+	cancel()
 }
 
 func ExampleNewSafeHashSet() {
@@ -40,6 +44,15 @@ func ExampleNewSafeHashSet() {
 
 	// 获取元素
 	shs.Contains(1)
+
+	// 获取元素个数
+	shs.Len()
+
+	// 遍历元素
+	shs.Range(func(v int) bool {
+		fmt.Println(v)
+		return true
+	})
 }
 
 func ExampleNewSharedSafeMap() {
@@ -55,5 +68,14 @@ func ExampleNewSharedSafeMap() {
 	}
 
 	// 删除元素
-	sm.Del("1")
+	sm.Delete("1")
+
+	// 获取元素个数
+	sm.Len()
+
+	// 遍历元素
+	sm.Range(func(k string, v string) bool {
+		fmt.Println(k, v)
+		return true
+	})
 }

@@ -7,9 +7,12 @@
 package safemap
 
 import (
+	"fmt"
+	"github.com/bytedance/gopkg/collection/skipset"
 	"github.com/bytedance/gopkg/lang/fastrand"
 	"slices"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -19,23 +22,29 @@ type Set interface {
 	Remove(key string) bool
 }
 
-// benchmarkSet 大量并发读写的场景
-func benchmarkSet(b *testing.B, s Set, reads, writes uint32) {
-	for i := 0; i < initSize; i++ {
-		s.Add(strconv.Itoa(fastrand.Intn(randM)))
+func benchSet(b *testing.B, bench bench[Set]) {
+	ms := []Set{
+		//&Array{
+		//	dirty: make([]string, 0, initSize),
+		//},
+		&SyncSet[string]{},
+		NewSafeHashSet[string](),
+		skipset.NewString(),
 	}
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrand.Uint32n(reads + writes)
-			if u < writes {
-				_ = s.Add(strconv.Itoa(fastrand.Intn(randM)))
-			} else {
-				_ = s.Contains(strconv.Itoa(fastrand.Intn(randM)))
+	for _, m := range ms {
+		b.Run(fmt.Sprintf("%T", m), func(b *testing.B) {
+			if bench.setup != nil {
+				bench.setup(b, m)
 			}
-		}
-	})
+
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			b.RunParallel(func(pb *testing.PB) {
+				bench.perG(b, pb, b.N, m)
+			})
+		})
+	}
 }
 
 type Array struct {
@@ -61,34 +70,106 @@ func (a *Array) Remove(key string) bool {
 	return false
 }
 
-func benchmarkSets(b *testing.B, reads, writes uint32) {
-	b.Logf("Writer: %d,Reader: %d", writes, reads)
-
-	// read write goroutine
-	b.Run("Array", func(b *testing.B) {
-		set := &Array{
-			m: make([]string, 0, initSize),
-		}
-		benchmarkSet(b, set, writes, reads)
-	})
-
-	//b.Run("HashSet", func(b *testing.B) {
-	//	set := NewHashSetWithSize[string](initSize)
-	//	benchmarkSet(b, set, writes, reads)
-	//})
-
-	b.Run("SafeHashSet", func(b *testing.B) {
-		set := NewSafeHashSetWithSize[string](initSize)
-		benchmarkSet(b, set, writes, reads)
-	})
-
+// SyncMap
+type SyncSet[T comparable] struct {
+	m sync.Map
 }
 
-func BenchmarkSets_W100_R100(b *testing.B) {
-	benchmarkSets(b, 100, 100)
-
+func (a *SyncSet[T]) Add(key string) bool {
+	_, loaded := a.m.LoadOrStore(key, struct{}{})
+	return !loaded
 }
 
-func BenchmarkSets_W100_R1000(b *testing.B) {
-	benchmarkSets(b, 1000, 100)
+func (a *SyncSet[T]) Contains(key string) bool {
+	_, ok := a.m.Load(key)
+	return ok
+}
+
+func (a *SyncSet[T]) Remove(key string) bool {
+	a.m.Delete(key)
+	return true
+}
+
+func benchmarkSet(b *testing.B, adds, contains uint32) {
+	benchSet(b, bench[Set]{
+		perG: func(b *testing.B, pb *testing.PB, i int, m Set) {
+			for pb.Next() {
+				u := fastrand.Uint32n(adds + contains)
+				if u < adds {
+					m.Add(strconv.Itoa(int(fastrand.Uint32n(randM))))
+				} else {
+					m.Contains(strconv.Itoa(int(fastrand.Uint32n(randM))))
+				}
+			}
+		},
+	})
+}
+
+func BenchmarkSet10Add90Contains(b *testing.B) {
+	benchmarkSet(b, 10, 90)
+}
+
+func BenchmarkSet30Add70Contains(b *testing.B) {
+	benchmarkSet(b, 30, 70)
+}
+
+func BenchmarkSet50Add50Contains(b *testing.B) {
+	benchmarkSet(b, 50, 50)
+}
+
+func benchmarkSetHits(b *testing.B, hits, misses int) {
+	benchSet(b, bench[Set]{
+		setup: func(_ *testing.B, m Set) {
+			for i := 0; i < initSize*(hits+misses); i++ {
+				if fastrand.Uint32n(uint32(hits+misses)) < uint32(hits) {
+					m.Add(strconv.Itoa(i))
+				}
+			}
+		},
+
+		perG: func(b *testing.B, pb *testing.PB, i int, m Set) {
+			for pb.Next() {
+				m.Contains(strconv.Itoa(int(fastrand.Uint32n(uint32(initSize * (hits + misses))))))
+			}
+		},
+	})
+}
+
+func BenchmarkSetContains90Hits(b *testing.B) {
+	benchmarkSetHits(b, 9, 1)
+}
+
+func BenchmarkSetContains50Hits(b *testing.B) {
+	benchmarkSetHits(b, 5, 5)
+}
+
+func benchmarkSetAddHits(b *testing.B, hits, misses int) {
+	benchSet(b, bench[Set]{
+		setup: func(_ *testing.B, m Set) {
+			for i := 0; i < initSize*(hits+misses); i++ {
+				if fastrand.Uint32n(uint32(hits+misses)) < uint32(hits) {
+					m.Add(strconv.Itoa(i))
+				}
+			}
+		},
+
+		perG: func(b *testing.B, pb *testing.PB, i int, m Set) {
+			for pb.Next() {
+				n := int(fastrand.Uint32n(uint32(initSize * (hits + misses))))
+				if n < hits {
+					m.Add(strconv.Itoa(n))
+				} else {
+					m.Contains(strconv.Itoa(n))
+				}
+			}
+		},
+	})
+}
+
+func BenchmarkSetAddContains90Hits(b *testing.B) {
+	benchmarkSetAddHits(b, 9, 1)
+}
+
+func BenchmarkSetAddContains50Hits(b *testing.B) {
+	benchmarkSetAddHits(b, 5, 5)
 }

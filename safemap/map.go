@@ -13,57 +13,87 @@ import (
 
 // SafeMap 多线程安全的 Map
 type SafeMap[T any] struct {
-	m map[string]T
-	l sync.RWMutex
+	dirty map[string]T
+	rw    sync.RWMutex
 }
 
 // NewSafeMap 创建一个新的 SafeMap
 func NewSafeMap[T any]() *SafeMap[T] {
 	return &SafeMap[T]{
-		m: make(map[string]T),
-		l: sync.RWMutex{},
+		dirty: make(map[string]T),
+		rw:    sync.RWMutex{},
 	}
 }
 
-// Get 返回给定键的值
-func (sm *SafeMap[T]) Get(key string) (T, bool) {
-	sm.l.RLock()
-	value, ok := sm.m[key]
-	sm.l.RUnlock()
+// Load 返回给定键的值
+func (m *SafeMap[T]) Load(key string) (T, bool) {
+	m.rw.RLock()
+	value, ok := m.dirty[key]
+	m.rw.RUnlock()
 	return value, ok
 }
 
-// Set 设置给定键的值
-func (sm *SafeMap[T]) Set(key string, value T) {
-	sm.l.Lock()
-	sm.m[key] = value
-	sm.l.Unlock()
+// Store 设置给定键的值
+func (m *SafeMap[T]) Store(key string, value T) {
+	m.rw.Lock()
+	if m.dirty == nil {
+		m.dirty = make(map[string]T)
+	}
+	m.dirty[key] = value
+	m.rw.Unlock()
 }
 
-// Del 删除给定键的值
-func (sm *SafeMap[T]) Del(key string) {
-	sm.l.Lock()
-	delete(sm.m, key)
-	sm.l.Unlock()
+// LoadOrStore 返回给定键的值, 如果不存在则存储给定值
+func (m *SafeMap[T]) LoadOrStore(key string, value T) (actual T, loaded bool) {
+	m.rw.Lock()
+	actual, loaded = m.dirty[key]
+	if !loaded {
+		actual = value
+		if m.dirty == nil {
+			m.dirty = make(map[string]T)
+		}
+		m.dirty[key] = value
+	}
+	m.rw.Unlock()
+	return actual, loaded
+}
+
+// Delete 删除给定键的值
+func (m *SafeMap[T]) Delete(key string) bool {
+	m.rw.Lock()
+	delete(m.dirty, key)
+	m.rw.Unlock()
+	return true
+}
+
+// LoadAndDelete 返回给定键的值, 并删除该键
+func (m *SafeMap[T]) LoadAndDelete(key string) (T, bool) {
+	m.rw.Lock()
+	value, loaded := m.dirty[key]
+	if loaded {
+		delete(m.dirty, key)
+	}
+	m.rw.Unlock()
+	return value, loaded
 }
 
 // Keys 返回所有键
-func (sm *SafeMap[T]) Keys() []string {
-	sm.l.RLock()
-	keys := make([]string, 0, len(sm.m))
-	for key := range sm.m {
+func (m *SafeMap[T]) Keys() []string {
+	m.rw.RLock()
+	keys := make([]string, 0, len(m.dirty))
+	for key := range m.dirty {
 		keys = append(keys, key)
 	}
-	sm.l.RUnlock()
+	m.rw.RUnlock()
 	return keys
 }
 
 // Range 对 Map 中的每个键值对调用给定的函数
-func (sm *SafeMap[T]) Range(f func(key string, value T) bool) {
-	sm.l.RLock()
-	defer sm.l.RUnlock()
+func (m *SafeMap[T]) Range(f func(key string, value T) bool) {
+	m.rw.RLock()
+	defer m.rw.RUnlock()
 
-	for key, value := range sm.m {
+	for key, value := range m.dirty {
 		if !f(key, value) {
 			return
 		}
@@ -71,11 +101,11 @@ func (sm *SafeMap[T]) Range(f func(key string, value T) bool) {
 }
 
 // Len 返回 Map 中的元素数量
-func (sm *SafeMap[T]) Len() int {
-	sm.l.RLock()
-	defer sm.l.RUnlock()
+func (m *SafeMap[T]) Len() int {
+	m.rw.RLock()
+	defer m.rw.RUnlock()
 
-	return len(sm.m)
+	return len(m.dirty)
 
 }
 
@@ -98,19 +128,31 @@ func NewSharedSafeMap[T any]() *SharedSafeMap[T] {
 // Load 返回给定键的值
 func (sm *SharedSafeMap[T]) Load(key string) (T, bool) {
 	i := share(key, len(sm.buckets))
-	return sm.buckets[i].Get(key)
+	return sm.buckets[i].Load(key)
 }
 
 // Store 设置给定键的值
 func (sm *SharedSafeMap[T]) Store(key string, value T) {
 	i := share(key, len(sm.buckets))
-	sm.buckets[i].Set(key, value)
+	sm.buckets[i].Store(key, value)
 }
 
-// Del 删除给定键的值
-func (sm *SharedSafeMap[T]) Del(key string) {
+// LoadOrStore 返回给定键的值, 如果不存在则存储给定值
+func (sm *SharedSafeMap[T]) LoadOrStore(key string, value T) (actual T, loaded bool) {
 	i := share(key, len(sm.buckets))
-	sm.buckets[i].Del(key)
+	return sm.buckets[i].LoadOrStore(key, value)
+}
+
+// Delete 删除给定键的值
+func (sm *SharedSafeMap[T]) Delete(key string) bool {
+	i := share(key, len(sm.buckets))
+	return sm.buckets[i].Delete(key)
+}
+
+// LoadAndDelete 返回给定键的值, 并删除该键
+func (sm *SharedSafeMap[T]) LoadAndDelete(key string) (T, bool) {
+	i := share(key, len(sm.buckets))
+	return sm.buckets[i].LoadAndDelete(key)
 }
 
 // Keys 返回所有键

@@ -7,79 +7,106 @@
 package safemap
 
 import (
-	"github.com/bytedance/gopkg/collection/skipmap"
-	"sync"
+	"fmt"
+	"github.com/bytedance/gopkg/lang/fastrand"
+	"math"
+	"strconv"
 	"testing"
 )
 
-type SyncMap struct {
-	m sync.Map
+const initSize = 1 << 10 // for `load` `1Delete9Store90Load` `1Range9Delete90Store900Load`
+const randM = math.MaxUint32
+
+type bench[T any] struct {
+	setup func(*testing.B, T)
+	perG  func(b *testing.B, pb *testing.PB, i int, m T)
 }
 
-func (o *SyncMap) Get(key string) (struct{}, bool) {
-	_, ok := o.m.Load(key)
-	return struct{}{}, ok
-}
-func (o *SyncMap) Set(key string, value struct{}) {
-	o.m.Store(key, value)
-}
+func benchMap(b *testing.B, bench bench[mapInterface[struct{}]]) {
+	ms := []mapInterface[struct{}]{
+		//NewDeepCopyMap[struct{}](),
+		NewSyncMap[struct{}](),
+		NewSkipMap[struct{}](),
+		NewSafeMap[struct{}](),
+		NewSyncMapShared[struct{}](),
+		NewSharedSafeMap[struct{}](),
+	}
+	for _, m := range ms {
+		b.Run(fmt.Sprintf("%T", m), func(b *testing.B) {
+			if bench.setup != nil {
+				bench.setup(b, m)
+			}
 
-func (o *SyncMap) Del(key string) {
-	o.m.Delete(key)
-}
+			b.ReportAllocs()
+			b.ResetTimer()
 
-func NewSyncMap() *SyncMap {
-	return &SyncMap{}
-}
-
-type SkipMap struct {
-	m *skipmap.StringMap
-}
-
-func (o *SkipMap) Get(key string) (struct{}, bool) {
-	_, ok := o.m.Load(key)
-	return struct{}{}, ok
-}
-func (o *SkipMap) Set(key string, value struct{}) {
-	o.m.Store(key, value)
-}
-
-func (o *SkipMap) Del(key string) {
-	o.m.Delete(key)
-}
-
-func NewSkipMap() *SkipMap {
-	return &SkipMap{
-		m: skipmap.NewString(),
+			b.RunParallel(func(pb *testing.PB) {
+				bench.perG(b, pb, b.N, m)
+			})
+		})
 	}
 }
 
-func benchmarkMaps(b *testing.B, reads, writes uint32) {
-	b.Logf("Writer: %d,Reader: %d", writes, reads)
-
-	// read write goroutine
-	b.Run("SyncMap", func(b *testing.B) {
-		hm := NewSyncMap()
-		benchmarkMap(b, hm, writes, reads)
-	})
-
-	b.Run("SkipMap", func(b *testing.B) {
-		hm := NewSkipMap()
-		benchmarkMap(b, hm, writes, reads)
-	})
-
-	b.Run("SafeMap", func(b *testing.B) {
-		hm := NewSafeMap[struct{}]()
-		benchmarkMap(b, hm, writes, reads)
+func BenchmarkMapStore(b *testing.B) {
+	benchMap(b, bench[mapInterface[struct{}]]{
+		perG: func(b *testing.B, pb *testing.PB, i int, m mapInterface[struct{}]) {
+			for pb.Next() {
+				m.Store(strconv.Itoa(int(fastrand.Uint32())), struct{}{})
+			}
+		},
 	})
 
 }
 
-func BenchmarkMaps_W100_R100(b *testing.B) {
-	benchmarkMaps(b, 100, 100)
+func benchmarkMapLoadHits(b *testing.B, hits, misses int) {
+	benchMap(b, bench[mapInterface[struct{}]]{
+		setup: func(_ *testing.B, m mapInterface[struct{}]) {
+			for i := 0; i < initSize*(hits+misses); i++ {
+				if fastrand.Uint32n(uint32(hits+misses)) < uint32(hits) {
+					m.Store(strconv.Itoa(i), struct{}{})
+				}
+			}
+		},
 
+		perG: func(b *testing.B, pb *testing.PB, i int, m mapInterface[struct{}]) {
+			for pb.Next() {
+				m.Load(strconv.Itoa(int(fastrand.Uint32n(uint32(initSize * (hits + misses))))))
+			}
+		},
+	})
 }
 
-func BenchmarkMaps_W100_R1000(b *testing.B) {
-	benchmarkMaps(b, 1000, 100)
+func BenchmarkMapLoad90Hits(b *testing.B) {
+	benchmarkMapLoadHits(b, 9, 1)
+}
+
+func BenchmarkMapLoad50Hits(b *testing.B) {
+	benchmarkMapLoadHits(b, 5, 5)
+}
+
+func benchmarkMapStoreLoad(b *testing.B, writes, reads uint32) {
+	benchMap(b, bench[mapInterface[struct{}]]{
+		perG: func(b *testing.B, pb *testing.PB, i int, m mapInterface[struct{}]) {
+			for pb.Next() {
+				u := fastrand.Uint32n(writes + reads)
+				if u < writes {
+					m.Store(strconv.Itoa(int(fastrand.Uint32n(randM))), struct{}{})
+				} else {
+					m.Load(strconv.Itoa(int(fastrand.Uint32n(randM))))
+				}
+			}
+		},
+	})
+}
+
+func BenchmarkMap50Store50Load(b *testing.B) {
+	benchmarkMapStoreLoad(b, 50, 50)
+}
+
+func BenchmarkMap30Store70Load(b *testing.B) {
+	benchmarkMapStoreLoad(b, 30, 70)
+}
+
+func BenchmarkMap10Store90Load(b *testing.B) {
+	benchmarkMapStoreLoad(b, 10, 90)
 }

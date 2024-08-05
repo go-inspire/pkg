@@ -10,7 +10,22 @@ import (
 	"context"
 	"golang.org/x/sync/errgroup"
 	"runtime"
+	"sync/atomic"
 )
+
+type SharedChannelStats struct {
+	*SharedStats
+	PullCount uint64
+}
+
+// AddPullCount 递增
+func (s *SharedChannelStats) AddPullCount() {
+	atomic.AddUint64(&s.PullCount, 1)
+}
+
+func NewSharedChannelStats(n int) *SharedChannelStats {
+	return &SharedChannelStats{SharedStats: NewSharedStats(n)}
+}
 
 // SharedKey 用于生成共享通道的 key, 以便将消息分组到不同的通道中.
 type SharedKey[T any] func(v T) string
@@ -20,6 +35,7 @@ type SharedKey[T any] func(v T) string
 type SharedChannel[T any] struct {
 	channels []chan T
 	key      SharedKey[T]
+	stats    *SharedChannelStats
 }
 
 // NewSharedChannel 创建一个新的共享通道
@@ -29,7 +45,7 @@ func NewSharedChannel[T any](key SharedKey[T]) *SharedChannel[T] {
 	for i := range channels {
 		channels[i] = make(chan T)
 	}
-	return &SharedChannel[T]{channels: channels, key: key}
+	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
 }
 
 // NewSharedChannelWithSize 创建一个新的共享通道
@@ -39,7 +55,7 @@ func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[
 	for i := range channels {
 		channels[i] = make(chan T, size)
 	}
-	return &SharedChannel[T]{channels: channels, key: key}
+	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
 }
 
 // Push 推送消息到通道
@@ -47,6 +63,7 @@ func (c *SharedChannel[T]) Push(value T) {
 	key := c.key(value)
 	i := share(key, len(c.channels))
 	c.channels[i] <- value
+	c.stats.AddHit(i)
 }
 
 // Pull 从通道拉取数据; 启用 goroutine 同时处理多个通道, 通过 context 控制退出. 适用于处理多个通道的场景.
@@ -60,6 +77,7 @@ func (c *SharedChannel[T]) Pull(ctx context.Context, f func(value T) bool) error
 				return context.Cause(ctx)
 
 			case v := <-channel:
+				c.stats.AddPullCount()
 				if !f(v) {
 					return nil
 				}
@@ -79,4 +97,9 @@ func (c *SharedChannel[T]) Close() {
 	for _, channel := range c.channels {
 		close(channel)
 	}
+}
+
+// Stats 获取通道状态
+func (c *SharedChannel[T]) Stats() *SharedChannelStats {
+	return c.stats
 }

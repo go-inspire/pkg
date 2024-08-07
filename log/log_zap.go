@@ -173,14 +173,6 @@ func buildFrom(file string) (*zapLogger, error) {
 		Config: zap.NewProductionConfig(),
 		Named:  make(map[string]Level),
 	}
-	//取最小的级别
-	minLevel := zapcore.DebugLevel
-	for _, v := range config.Named {
-		if v < minLevel {
-			minLevel = v
-		}
-	}
-	config.Level.SetLevel(minLevel)
 
 	fmt.Printf("Loading config: %v\n", file)
 	f, err := os.Open(file)
@@ -192,10 +184,23 @@ func buildFrom(file string) (*zapLogger, error) {
 		return nil, err
 	}
 
+	defaultLevel := config.Level.Level()
+
+	//取最小的级别
+	minLevel := zapcore.DebugLevel
+	for _, v := range config.Named {
+		if v < minLevel {
+			minLevel = v
+		}
+	}
+	config.Level.SetLevel(minLevel)
+
 	logger := newZapLogger(config)
 	SetConfig(Config{
-		DefaultLevel: config.Level.Level(),
+		DefaultLevel: defaultLevel,
 		Named:        config.Named,
 	})
+
+	fmt.Println("default level:", defaultLevel)
 	return logger, nil
 }

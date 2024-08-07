@@ -70,24 +70,28 @@ func (c *SharedChannel[T]) Push(value T) {
 // 调用该方法会 block 当前 goroutine, 直到所有通道处理完毕, 或者 context 被取消, 或者 Close 被调用.
 func (c *SharedChannel[T]) Pull(ctx context.Context, f func(value T) bool) error {
 	eg, ctx := errgroup.WithContext(ctx)
-	pullFn := func(channel <-chan T) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return context.Cause(ctx)
+	pull := func(channel <-chan T) {
+		eg.Go(func() error {
+			for {
+				select {
+				case <-ctx.Done():
+					return context.Cause(ctx)
 
-			case v := <-channel:
-				c.stats.AddPullCount()
-				if !f(v) {
-					return nil
+				case v, ok := <-channel:
+					// 通道已关闭
+					if !ok {
+						return nil
+					}
+					c.stats.AddPullCount()
+					if !f(v) {
+						return nil
+					}
 				}
 			}
-		}
+		})
 	}
 	for _, channel := range c.channels {
-		eg.Go(func() error {
-			return pullFn(channel)
-		})
+		pull(channel)
 	}
 	return eg.Wait()
 }

@@ -48,7 +48,7 @@ func NewSharedChannel[T any](key SharedKey[T]) *SharedChannel[T] {
 	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
 }
 
-// NewSharedChannelWithSize 创建一个新的共享通道
+// NewSharedChannelWithSize 创建一个新的共享通道, 指定缓冲区大小
 func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[T] {
 	n := runtime.GOMAXPROCS(0)
 	channels := make([]chan T, n)
@@ -56,6 +56,15 @@ func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[
 		channels[i] = make(chan T, size)
 	}
 	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
+}
+
+// NewSharedChannelWithSharedSize 创建一个新的共享通道, 指定共享通道数量和缓冲区大小
+func NewSharedChannelWithSharedSize[T any](key SharedKey[T], shared, size int) *SharedChannel[T] {
+	channels := make([]chan T, shared)
+	for i := range channels {
+		channels[i] = make(chan T, size)
+	}
+	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(shared)}
 }
 
 // Push 推送消息到通道

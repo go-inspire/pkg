@@ -30,12 +30,25 @@ func Named(s string) *Adapter {
 	s = strings.ToLower(s)
 	a, ok := adapters[s]
 	if !ok {
-		if lvl, exists := cfg.Named[s]; exists {
-			a = NewAdapter(defaultAdapter.logger, WithLevel(lvl))
-		} else {
+		//按照 . 分隔符，逐级向下查找
+		//例如：openapi.ctp -> openapi -> default
+		//如果找不到，则使用默认的defaultAdapter
+		name := s
+		for {
+			if lvl, exists := cfg.Named[name]; exists {
+				a = NewAdapter(defaultAdapter.logger, WithLevel(lvl))
+				break
+			}
+			if index := strings.LastIndex(name, "."); index > 0 {
+				name = name[:index]
+			} else {
+				break
+			}
+
+		}
+		if a == nil {
 			a = NewAdapter(defaultAdapter.logger, WithLevel(cfg.DefaultLevel))
 		}
-
 		adapters[s] = a
 	}
 	return a

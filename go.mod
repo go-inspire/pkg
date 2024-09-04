@@ -3,7 +3,7 @@ module github.com/go-inspire/pkg
 go 1.21
 
 require (
-	github.com/bytedance/gopkg v0.0.0-20220118071334-3db87571198b
+	github.com/bytedance/gopkg v0.1.2-0.20240828084325-780ca9ee70fb
 	github.com/bytedance/sonic v1.11.9
 	github.com/casbin/casbin/v2 v2.97.0
 	github.com/fsnotify/fsnotify v1.7.0
@@ -13,7 +13,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/upper/db/v4 v4.8.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	google.golang.org/protobuf v1.34.2
 )
 

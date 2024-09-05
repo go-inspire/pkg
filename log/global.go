@@ -23,6 +23,24 @@ type Config struct {
 	Named        map[string]Level `json:"named" yaml:"named"`
 }
 
+// findAdapterLevel 按照 . 分隔符，逐级向下查找
+// 例如：a.b.c -> a.b -> a
+// 如果找不到，则使用默认的 DefaultLevel
+func findConfigLevel(cfg *Config, s string) Level {
+	name := s
+	for {
+		if lvl, exists := cfg.Named[name]; exists {
+			return lvl
+		}
+		if index := strings.LastIndex(name, "."); index > 0 {
+			name = name[:index]
+		} else {
+			return cfg.DefaultLevel
+		}
+
+	}
+}
+
 func Named(s string) *Adapter {
 	mu.Lock()
 	defer mu.Unlock()
@@ -30,25 +48,8 @@ func Named(s string) *Adapter {
 	s = strings.ToLower(s)
 	a, ok := adapters[s]
 	if !ok {
-		//按照 . 分隔符，逐级向下查找
-		//例如：openapi.ctp -> openapi -> default
-		//如果找不到，则使用默认的defaultAdapter
-		name := s
-		for {
-			if lvl, exists := cfg.Named[name]; exists {
-				a = NewAdapter(defaultAdapter.logger, WithLevel(lvl))
-				break
-			}
-			if index := strings.LastIndex(name, "."); index > 0 {
-				name = name[:index]
-			} else {
-				break
-			}
-
-		}
-		if a == nil {
-			a = NewAdapter(defaultAdapter.logger, WithLevel(cfg.DefaultLevel))
-		}
+		level := findConfigLevel(&cfg, s)
+		a = NewAdapter(defaultAdapter.logger, WithLevel(level))
 		adapters[s] = a
 	}
 	return a
@@ -61,15 +62,9 @@ func SetConfig(config Config) {
 	cfg = config
 
 	if len(cfg.Named) > 0 {
-		dlvl := cfg.DefaultLevel
 		for k, a := range adapters {
-			lvl, ok := cfg.Named[k]
-			if !ok {
-				a.SetLevel(dlvl)
-			} else {
-				a.SetLevel(lvl)
-			}
-
+			lvl := findConfigLevel(&cfg, k)
+			a.SetLevel(lvl)
 			adapters[k] = a
 		}
 	}

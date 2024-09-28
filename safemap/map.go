@@ -88,6 +88,17 @@ func (m *SafeMap[T]) Keys() []string {
 	return keys
 }
 
+// Values 返回所有值
+func (m *SafeMap[T]) Values() []T {
+	m.rw.RLock()
+	values := make([]T, 0, len(m.dirty))
+	for _, value := range m.dirty {
+		values = append(values, value)
+	}
+	m.rw.RUnlock()
+	return values
+}
+
 // Range 对 Map 中的每个键值对调用给定的函数
 func (m *SafeMap[T]) Range(f func(key string, value T) bool) {
 	m.rw.RLock()
@@ -157,11 +168,20 @@ func (sm *SharedSafeMap[T]) LoadAndDelete(key string) (T, bool) {
 
 // Keys 返回所有键
 func (sm *SharedSafeMap[T]) Keys() []string {
-	keys := make([]string, 0)
+	keys := make([]string, 0, len(sm.buckets))
 	for _, bucket := range sm.buckets {
 		keys = append(keys, bucket.Keys()...)
 	}
 	return keys
+}
+
+// Values 返回所有值
+func (sm *SharedSafeMap[T]) Values() []T {
+	values := make([]T, 0, len(sm.buckets))
+	for _, bucket := range sm.buckets {
+		values = append(values, bucket.Values()...)
+	}
+	return values
 }
 
 // Range 对 Map 中的每个键值对调用给定的函数

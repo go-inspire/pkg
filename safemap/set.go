@@ -59,6 +59,15 @@ func (s HashSet[T]) Len() int {
 	return len(s)
 }
 
+// ToList 返回此集合的元素列表
+func (s HashSet[T]) ToList() []T {
+	l := make([]T, 0, len(s))
+	for k := range s {
+		l = append(l, k)
+	}
+	return l
+}
+
 // SafeHashSet 是线程安全的 HashSet
 type SafeHashSet[T comparable] struct {
 	dirty sync.Map
@@ -101,6 +110,16 @@ func (s *SafeHashSet[T]) Len() int {
 	l := 0
 	s.dirty.Range(func(_, _ interface{}) bool {
 		l++
+		return true
+	})
+	return l
+}
+
+// ToList 返回此集合的元素列表
+func (s *SafeHashSet[T]) ToList() []T {
+	l := make([]T, 0, s.Len())
+	s.Range(func(value T) bool {
+		l = append(l, value)
 		return true
 	})
 	return l

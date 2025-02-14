@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 JQuant Authors. All rights reserved.
+ * Copyright 2025 Enoch <lanxenet@gmail.com>. All rights reserved.
  * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
@@ -38,7 +38,10 @@ type SharedChannel[T any] struct {
 	stats    *SharedChannelStats
 }
 
-// NewSharedChannel 创建一个新的共享通道
+// NewSharedChannel 创建一个SharedChannel实例，用于在多个goroutine间共享通道。
+// 这个函数接受一个SharedKey参数，用于唯一标识和管理共享的通道。
+// [key] 参数表示用于标识和管理共享通道的键。
+// 返回值是一个指向SharedChannel实例的指针，该实例包含了多个通道和相关的统计信息。
 func NewSharedChannel[T any](key SharedKey[T]) *SharedChannel[T] {
 	n := runtime.GOMAXPROCS(0)
 	channels := make([]chan T, n)
@@ -48,7 +51,16 @@ func NewSharedChannel[T any](key SharedKey[T]) *SharedChannel[T] {
 	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
 }
 
-// NewSharedChannelWithSize 创建一个新的共享通道, 指定缓冲区大小
+// NewSharedChannelWithSize 创建一个具有指定缓冲区大小的 SharedChannel 实例。
+// 这个函数根据运行时的处理器数量，为每个处理器创建一个具有相同缓冲区大小的通道。
+// 参数:
+//
+//	key - 用于标识 SharedChannel 的键，类型为 SharedKey[T]。
+//	size - 指定每个通道的缓冲区大小。
+//
+// 返回值:
+//
+//	*SharedChannel[T] - 返回一个指向新创建的 SharedChannel 实例的指针
 func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[T] {
 	n := runtime.GOMAXPROCS(0)
 	channels := make([]chan T, n)
@@ -58,7 +70,11 @@ func NewSharedChannelWithSize[T any](key SharedKey[T], size int) *SharedChannel[
 	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(n)}
 }
 
-// NewSharedChannelWithSharedSize 创建一个新的共享通道, 指定共享通道数量和缓冲区大小
+// NewSharedChannelWithSharedSize 创建一个具有共享大小的 SharedChannel。
+// 该函数接收一个 SharedKey，用于标识和管理共享通道中的数据类型 T。
+// 参数 shared 指定有多少个共享的子通道，而 size 则指定了每个子通道的缓冲区大小。
+// 返回值是一个指向 SharedChannel 结构的指针，该结构包含了共享通道的配置。
+// 此函数主要用于在多个协程间共享通道，同时控制通道的大小，以实现高效的并发通信。
 func NewSharedChannelWithSharedSize[T any](key SharedKey[T], shared, size int) *SharedChannel[T] {
 	channels := make([]chan T, shared)
 	for i := range channels {
@@ -67,7 +83,9 @@ func NewSharedChannelWithSharedSize[T any](key SharedKey[T], shared, size int) *
 	return &SharedChannel[T]{channels: channels, key: key, stats: NewSharedChannelStats(shared)}
 }
 
-// Push 推送消息到通道
+// Push 方法用于向共享通道中推送一个值。
+// 该方法首先根据值计算出一个键，然后根据键选择一个通道，将值发送到该通道。
+// 最后，更新统计信息，记录此次推送操作。
 func (c *SharedChannel[T]) Push(value T) {
 	key := c.key(value)
 	i := share(key, len(c.channels))

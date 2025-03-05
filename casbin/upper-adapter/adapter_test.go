@@ -14,7 +14,7 @@ import (
 
 func testGetPolicy(t *testing.T, e *casbin.Enforcer, res [][]string) {
 	t.Helper()
-	myRes := e.GetPolicy()
+	myRes, _ := e.GetPolicy()
 	log.Print("Policy: ", myRes)
 
 	m := make(map[string]bool, len(res))
@@ -298,7 +298,7 @@ func testUpdateFilteredPolicies(t *testing.T, a *Adapter) {
 }
 
 func testGetPolicyWithoutOrder(t *testing.T, e *casbin.Enforcer, res [][]string) {
-	myRes := e.GetPolicy()
+	myRes, _ := e.GetPolicy()
 	log.Print("Policy: ", myRes)
 
 	if !arrayEqualsWithoutOrder(myRes, res) {
@@ -344,6 +344,7 @@ func arrayEqualsWithoutOrder(a [][]string, b [][]string) bool {
 func TestAdapters(t *testing.T) {
 	db.LC().SetLevel(db.LogLevelDebug)
 
+	//conn, err := mysql.ParseURL("jquant:jquant123@tcp(172.16.2.154:3306)/jquant")
 	conn, err := mysql.ParseURL("dev:dev123@tcp(localhost:3306)/dev")
 	session, err := mysql.Open(conn)
 	if err != nil {

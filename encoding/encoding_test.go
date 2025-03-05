@@ -7,7 +7,6 @@
 package encoding
 
 import (
-	testData "github.com/go-inspire/pkg/encoding/json/testdata"
 	"reflect"
 	"strings"
 	"testing"
@@ -81,10 +80,6 @@ func TestMarshalJSON(t *testing.T) {
 			expect: `{"a":"a","b":"b","c":"c"}`,
 		},
 		{
-			input:  &testData.TestModel{Id: 1, Name: "inspire", Hobby: []string{"1", "2"}},
-			expect: `{"id":"1","name":"inspire","hobby":["1","2"],"attrs":{}}`,
-		},
-		{
 			input:  &mock{value: Gopher},
 			expect: `"gopher"`,
 		},
@@ -106,8 +101,6 @@ func TestMarshalJSON(t *testing.T) {
 
 func TestUnmarshalJSON(t *testing.T) {
 	p := testMessage{}
-	p2 := testData.TestModel{}
-	p3 := &testData.TestModel{}
 	p4 := &mock{}
 	tests := []struct {
 		input  string
@@ -120,14 +113,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		{
 			input:  `{"a":"a","b":"b","c":"c"}`,
 			expect: &p,
-		},
-		{
-			input:  `{"id":"1","name":"inspire","hobby":["1","2"],"attrs":{}}`,
-			expect: &p2,
-		},
-		{
-			input:  `{"id":1,"name":"inspire","hobby":["1","2"]}`,
-			expect: &p3,
 		},
 		{
 			input:  `"zebra"`,

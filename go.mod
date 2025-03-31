@@ -1,10 +1,12 @@
 module github.com/go-inspire/pkg
 
-go 1.21
+go 1.22
+
+toolchain go1.24.1
 
 require (
 	github.com/bytedance/gopkg v0.1.2-0.20241212062526-165e60aa2d41
-	github.com/bytedance/sonic v1.12.8
+	github.com/bytedance/sonic v1.12.10
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/goccy/go-json v0.10.5
@@ -24,8 +26,8 @@ require (
 	github.com/bytedance/sonic/loader v0.2.3 // indirect
 	github.com/casbin/govaluate v1.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
-	github.com/go-sql-driver/mysql v1.8.1 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
+	github.com/go-sql-driver/mysql v1.9.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect

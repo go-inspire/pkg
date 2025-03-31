@@ -8,9 +8,10 @@ package log
 
 import (
 	"context"
+	"io"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 )
 
 // Level is a logging priority. Higher levels are more important.
@@ -50,7 +51,10 @@ var NopLogger Logger = nopLogger{}
 
 type nopLogger struct{}
 
+// Log is a no-op implementation of the Logger interface.
 func (nopLogger) Log(ctx context.Context, level Level, msg string, keyValues ...interface{}) {}
+
+// Close is a no-op implementation of the io.Closer interface.
 func (nopLogger) Close() error {
 	return nil
 }

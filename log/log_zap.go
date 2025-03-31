@@ -91,8 +91,6 @@ func keyValuesToField(args []interface{}) (zap.Field, []interface{}) {
 	}
 }
 
-// 1. 读 zap.config.json 配置文件
-// 2. 读配置失败后读环境变量配置 zapLogger
 func initZapLogger(zapConfig string, lvl Level) Logger {
 	var logger *zapLogger
 

@@ -31,7 +31,7 @@ func Benchmark_fmtSprint_WithArgs(b *testing.B) {
 	})
 }
 
-func Benchmark_format(b *testing.B) {
+func Benchmark_sprint(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
@@ -41,7 +41,7 @@ func Benchmark_format(b *testing.B) {
 	})
 }
 
-func Benchmark_format_WithArgs(b *testing.B) {
+func Benchmark_sprint_WithArgs(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {

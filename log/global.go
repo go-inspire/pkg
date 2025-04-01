@@ -4,8 +4,7 @@
  * license that can be found in the LICENSE file.
  */
 
-// Package log provides a flexible logging system with support for multiple logging backends
-// and hierarchical log levels. It offers both structured and unstructured logging capabilities.
+// Package log 实现了一个线程安全的日志系统，支持多级别日志记录和组件隔离配置
 package log
 
 import (
@@ -14,29 +13,24 @@ import (
 )
 
 var (
-	// defaultAdapter is the default logger adapter used by the package-level logging functions.
+	// 全局默认日志适配器实例
 	defaultAdapter *Adapter
-	// cfg holds the global logging configuration including default and named log levels.
+	// 全局日志配置，包含默认级别和各组件级别
 	cfg = Config{DefaultLevel: InfoLevel, Named: make(map[string]Level)}
-	// adapters stores named logger adapters for different components or modules.
+	// 组件名称到日志适配器的映射表
 	adapters = make(map[string]*Adapter)
-	// mu protects concurrent access to the global variables.
+	// 保护全局变量的互斥锁
 	mu sync.Mutex
 )
 
-// Config represents the global logging configuration.
-// It allows setting default log levels and named log levels for specific components.
+// Config 定义日志系统的配置结构
 type Config struct {
-	// DefaultLevel is the default logging level used when no specific level is set.
-	DefaultLevel Level `json:"level" yaml:"level"`
-	// Named contains component-specific log levels, indexed by component name.
-	Named map[string]Level `json:"named" yaml:"named"`
+	DefaultLevel Level            // 系统默认日志级别
+	Named        map[string]Level // 各组件特定的日志级别配置
 }
 
-// findConfigLevel searches for the appropriate log level for a given component name.
-// It implements a hierarchical lookup where it tries to find the most specific level
-// by progressively removing segments from the name (e.g., "a.b.c" -> "a.b" -> "a").
-// If no specific level is found, it returns the default level.
+// findConfigLevel 实现组件日志级别的层级查找逻辑
+// 例如对于组件"a.b.c"，依次查找"a.b.c"、"a.b"、"a"的配置
 func findConfigLevel(cfg *Config, s string) Level {
 	name := s
 	for {
@@ -51,180 +45,160 @@ func findConfigLevel(cfg *Config, s string) Level {
 	}
 }
 
-// Named returns a logger adapter for the specified component name.
-// If a logger for the name already exists, it returns the existing one;
-// otherwise, it creates a new logger with the appropriate level based on the configuration.
+// Named 获取或创建指定组件的日志适配器
+// 组件名称不区分大小写，会自动转换为小写
 func Named(s string) *Adapter {
 	mu.Lock()
 	defer mu.Unlock()
 
 	s = strings.ToLower(s)
-	a, ok := adapters[s]
-	if !ok {
-		level := findConfigLevel(&cfg, s)
-		a = NewAdapter(defaultAdapter.logger, WithLevel(level))
-		adapters[s] = a
+	if a, ok := adapters[s]; ok {
+		return a
 	}
+
+	level := findConfigLevel(&cfg, s)
+	a := NewAdapter(defaultAdapter.logger, WithLevel(level))
+	adapters[s] = a
 	return a
 }
 
-// SetConfig updates the global logging configuration.
-// It also updates the log levels of all existing named adapters to match the new configuration.
+// SetConfig 更新全局日志配置并刷新所有适配器
 func SetConfig(config Config) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	cfg = config
-
-	if len(cfg.Named) > 0 {
-		for k, a := range adapters {
-			lvl := findConfigLevel(&cfg, k)
-			a.SetLevel(lvl)
-			adapters[k] = a
-		}
+	for k, a := range adapters {
+		a.SetLevel(findConfigLevel(&cfg, k))
 	}
 }
 
-// SetDefaultAdapter sets the default logger adapter used by package-level logging functions.
-// This adapter is used when no specific named logger is requested.
+// SetDefaultAdapter 替换默认日志适配器
 func SetDefaultAdapter(adapter *Adapter) {
 	mu.Lock()
 	defer mu.Unlock()
-
 	defaultAdapter = adapter
 }
 
-// SetDefaultLogger creates a new adapter with the specified logger and the current default level,
-// then sets it as the default adapter.
+// SetDefaultLogger 通过Logger接口创建并设置默认适配器
 func SetDefaultLogger(logger Logger) {
 	mu.Lock()
 	defer mu.Unlock()
-
 	defaultAdapter = NewAdapter(logger, WithLevel(cfg.DefaultLevel))
 }
 
-// Debug logs a message at debug level using fmt.Sprint to construct the message.
+// 以下是各级别日志方法的快捷方式，均委托给defaultAdapter处理
+
 func Debug(args ...interface{}) {
 	defaultAdapter.Debug(args...)
 }
 
-// Debugf logs a formatted message at debug level using fmt.Sprintf.
 func Debugf(msg string, args ...interface{}) {
 	defaultAdapter.Debugf(msg, args...)
 }
 
-// Debugw logs a message at debug level with key-value pairs.
 func Debugw(keyvals ...interface{}) {
 	defaultAdapter.Debugw(keyvals...)
 }
 
-// Info logs a message at info level using fmt.Sprint to construct the message.
+// Info 记录信息级别日志，参数通过fmt.Sprint格式化
 func Info(args ...interface{}) {
 	defaultAdapter.Info(args...)
 }
 
-// Infof logs a formatted message at info level using fmt.Sprintf.
+// Infof 记录信息级别日志，使用格式化字符串和参数
 func Infof(msg string, args ...interface{}) {
 	defaultAdapter.Infof(msg, args...)
 }
 
-// Infow logs a message at info level with key-value pairs.
+// Infow 记录带键值对的信息级别日志
 func Infow(keyvals ...interface{}) {
 	defaultAdapter.Infow(keyvals...)
 }
 
-// Warn logs a message at warn level using fmt.Sprint to construct the message.
+// Warn 记录警告级别日志，参数通过fmt.Sprint格式化
 func Warn(args ...interface{}) {
 	defaultAdapter.Warn(args...)
 }
 
-// Warnf logs a formatted message at warn level using fmt.Sprintf.
+// Warnf 记录警告级别日志，使用格式化字符串和参数
 func Warnf(msg string, args ...interface{}) {
 	defaultAdapter.Warnf(msg, args...)
 }
 
-// Warnw logs a message at warn level with key-value pairs.
+// Warnw 记录带键值对的警告级别日志
 func Warnw(keyvals ...interface{}) {
 	defaultAdapter.Warnw(keyvals...)
 }
 
-// Error logs a message at error level using fmt.Sprint to construct the message.
+// Error 记录错误级别日志，参数通过fmt.Sprint格式化
 func Error(args ...interface{}) {
 	defaultAdapter.Error(args...)
 }
 
-// Errorf logs a formatted message at error level using fmt.Sprintf.
+// Errorf 记录错误级别日志，使用格式化字符串和参数
 func Errorf(msg string, args ...interface{}) {
 	defaultAdapter.Errorf(msg, args...)
 }
 
-// Errorw logs a message at error level with key-value pairs.
+// Errorw 记录带键值对的错误级别日志
 func Errorw(keyvals ...interface{}) {
 	defaultAdapter.Errorw(keyvals...)
 }
 
-// Print logs a message at info level using fmt.Sprint to construct the message.
-// It is an alias for Info for compatibility with standard logging interfaces.
+// Print 兼容标准日志接口，等同于Info级别
 func Print(args ...interface{}) {
 	defaultAdapter.Info(args...)
 }
 
-// Printf logs a formatted message at info level using fmt.Sprintf.
-// It is an alias for Infof for compatibility with standard logging interfaces.
+// Printf 兼容标准日志接口，等同于Infof级别
 func Printf(msg string, args ...interface{}) {
 	defaultAdapter.Infof(msg, args...)
 }
 
-// Printw logs a message at info level with key-value pairs.
-// It is an alias for Infow for compatibility with standard logging interfaces.
+// Printw 兼容标准日志接口，等同于Infow级别
 func Printw(keyvals ...interface{}) {
 	defaultAdapter.Printw(keyvals...)
 }
 
-// Panic logs a message at panic level using fmt.Sprint to construct the message,
-// then panics with the constructed message.
+// Panic 记录日志后触发panic，使用fmt.Sprint格式化消息
 func Panic(args ...interface{}) {
 	defaultAdapter.Panic(args...)
 }
 
-// Panicf logs a formatted message at panic level using fmt.Sprintf,
-// then panics with the formatted message.
+// Panicf 记录日志后触发panic，使用格式化字符串和参数
 func Panicf(msg string, args ...interface{}) {
 	defaultAdapter.Panicf(msg, args...)
 }
 
-// Panicw logs a message at panic level with key-value pairs,
-// then panics with the message.
+// Panicw 记录带键值对的日志后触发panic
 func Panicw(keyvals ...interface{}) {
 	defaultAdapter.Panicw(keyvals...)
 }
 
-// Fatal logs a message at fatal level using fmt.Sprint to construct the message,
-// then calls os.Exit(1).
+// Fatal 记录日志后调用os.Exit(1)，使用fmt.Sprint格式化消息
 func Fatal(args ...interface{}) {
 	defaultAdapter.Fatal(args...)
 }
 
-// Fatalf logs a formatted message at fatal level using fmt.Sprintf,
-// then calls os.Exit(1).
+// Fatalf 记录日志后调用os.Exit(1)，使用格式化字符串和参数
 func Fatalf(msg string, args ...interface{}) {
 	defaultAdapter.Fatalf(msg, args...)
 }
 
-// Fatalw logs a message at fatal level with key-value pairs,
-// then calls os.Exit(1).
+// Fatalw 记录带键值对的日志后调用os.Exit(1)
 func Fatalw(keyvals ...interface{}) {
 	defaultAdapter.Fatalw(keyvals...)
 }
 
-// Flush ensures that any buffered log entries are written.
-// Applications should call this before exiting to ensure all logs are written.
+// Flush 确保所有缓冲日志条目被写入
 func Flush() error {
 	return defaultAdapter.Flush()
 }
 
-// SetLevel changes the log level for a named logger.
-// If the named logger doesn't exist, the call is ignored.
+// SetLevel 动态设置指定组件的日志级别
+// name: 组件名称
+// lvl: 日志级别字符串(debug/info/warn/error/panic/fatal)
 func SetLevel(name, lvl string) {
 	name = strings.ToLower(name)
 	a, ok := adapters[name]

@@ -10,37 +10,44 @@ import (
 	"fmt"
 )
 
-// sprint is a function that takes a variadic parameter of type interface{} and returns a string.
-// The function works as follows:
-// - If no arguments are provided, it returns an empty string.
-// - If a single argument is provided:
-//   - If the argument is of type string, it returns the string as is.
-//   - If the argument is not of type string but implements the fmt.Stringer interface, it returns the string representation of the argument.
-//   - If the argument is not of type string and does not implement the fmt.Stringer interface, it converts the argument to a string using fmt.Sprint and returns the result.
-//
-// - If more than one argument is provided, it converts all arguments to a string using fmt.Sprint and returns the result.
+// sprint 将任意类型参数转换为字符串
+// 功能说明:
+// - 如果没有参数，返回空字符串
+// - 如果只有一个参数:
+//   - 如果是字符串类型，直接返回
+//   - 如果实现了 fmt.Stringer 接口，调用其 String() 方法
+//   - 其他情况使用 fmt.Sprint 转换
+// - 多个参数时直接使用 fmt.Sprint 转换
 func sprint(a ...interface{}) string {
-	if len(a) == 0 {
+	switch len(a) {
+	case 0:
 		return ""
-	} else if len(a) == 1 {
-		if s, ok := a[0].(string); ok {
-			return s
-		} else if v, ok := a[0].(fmt.Stringer); ok {
-			return v.String()
-		} else {
-			return fmt.Sprint(a...)
+	case 1:
+		// 处理nil值
+		if a[0] == nil {
+			return "<nil>"
 		}
-	} else {
+		
+		// 使用类型switch替代多次类型断言，更高效
+		switch v := a[0].(type) {
+		case string:
+			return v
+		case fmt.Stringer:
+			return v.String()
+		default:
+			return fmt.Sprint(v)
+		}
+	default:
 		return fmt.Sprint(a...)
 	}
 }
 
-// sprintf is a function that takes a string template and a variadic parameter of type interface{} and returns a string.
-// The function works as follows:
-// - If no arguments are provided, it returns the template string as is.
-// - If the template string is not empty, it formats the string using fmt.Sprintf with the provided arguments and returns the result.
-// - If only one argument is provided and it is of type string, it returns the string as is.
-// - Otherwise, it converts the arguments to a string using the sprint function and returns the result.
+// sprintf 格式化字符串模板
+// 功能说明:
+// - 没有参数时返回原模板
+// - 模板非空时使用 fmt.Sprintf 格式化
+// - 只有一个字符串参数且模板为空时直接返回该字符串
+// - 其他情况调用 sprint 转换参数
 func sprintf(template string, args ...interface{}) string {
 	if len(args) == 0 {
 		return template

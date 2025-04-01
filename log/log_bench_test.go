@@ -15,9 +15,17 @@ import (
 	"testing"
 )
 
+type nopLogger struct{}
+
+func (nopLogger) Log(ctx context.Context, level Level, msg string, keyValues ...interface{}) {}
+
+func (nopLogger) Close() error {
+	return nil
+}
+
 func getLogger() *Adapter {
 	//a := NewAdapter(NopLogger, WithLevel(WarnLevel))
-	a := NewAdapter(NopLogger, WithLevel(InfoLevel))
+	a := NewAdapter(nopLogger{}, WithLevel(InfoLevel))
 	return a
 }
 

@@ -11,7 +11,8 @@ import (
 	"os"
 )
 
-// SetDefaultLogger set default logger.
+// init 初始化默认日志记录器
+// 根据配置自动选择使用 zap 或 slog 作为日志实现
 func init() {
 	var logger Logger
 	defer func() {
@@ -20,25 +21,28 @@ func init() {
 		}
 	}()
 
-	//读取 zap 配置文件
+	// 读取 zap 配置文件路径
+	// 优先从环境变量 LOG_ZAP_CONFIG 获取，默认使用 zap.config.json
 	zapConfig := "zap.config.json"
 	if val, ok := os.LookupEnv("LOG_ZAP_CONFIG"); ok {
 		zapConfig = val
 	}
 
+	// 从环境变量 LOG_LEVEL 获取日志级别
 	var lvl Level
 	if val := os.Getenv("LOG_LEVEL"); len(val) > 0 {
 		if err := lvl.UnmarshalText([]byte(val)); err != nil {
-			fmt.Printf("parse %s to zapcore.Level fail\n", val)
+			fmt.Printf("解析日志级别 %s 失败\n", val)
 		}
 	}
 
-	//如果 zap 配置文件不存在，则使用 slog
+	// 检查 zap 配置文件是否存在
+	// 如果不存在则使用 slog 作为默认日志实现
 	if _, err := os.Stat(zapConfig); os.IsNotExist(err) {
 		logger = initSlogLogger(lvl)
-		fmt.Println("use slog logger as default logger")
+		fmt.Println("使用 slog 作为默认日志记录器")
 	} else {
 		logger = initZapLogger(zapConfig, lvl)
-		fmt.Println("use zap logger as default logger")
+		fmt.Println("使用 zap 作为默认日志记录器")
 	}
 }

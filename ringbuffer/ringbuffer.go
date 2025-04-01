@@ -4,45 +4,64 @@
  * license that can be found in the LICENSE file.
  */
 
-// Package ringbuffer is simple ring (circular) buffer implementation.
+// Package ringbuffer 实现了简单的环形缓冲区数据结构。
 package ringbuffer
 
-import "fmt"
+import (
+	"errors"
+)
 
-// RingBuffer type represents ring buffer.
+var (
+	// ErrBufferEmpty 表示缓冲区为空时发生的错误
+	ErrBufferEmpty = errors.New("ring buffer: buffer is empty")
+	// ErrInvalidSize 表示创建缓冲区时指定了无效的大小
+	ErrInvalidSize = errors.New("ring buffer: invalid buffer size")
+)
+
+// RingBuffer 表示一个环形缓冲区数据结构。
+// 使用固定大小的切片实现，通过头尾指针管理数据。
 type RingBuffer struct {
-	head int
-	tail int
-	len  int
-	size int
-	buf  []interface{}
+	head int           // 头指针，指向第一个有效元素
+	tail int           // 尾指针，指向下一个插入位置
+	len  int           // 当前缓冲区中的元素数量
+	size int           // 缓冲区的总容量
+	buf  []interface{} // 底层数据存储
 }
 
-// NewRingBuffer returns a new RingBuffer.
-func NewRingBuffer(size int) *RingBuffer {
-	rb := new(RingBuffer)
-	rb.buf = make([]interface{}, size)
-	rb.size = size
-	return rb
-}
-
-// Push pushes the element val to the tail of the ring buffer.
-func (rb *RingBuffer) Push(val interface{}) error {
-	rb.buf[rb.tail] = val
-	rb.len++
-	rb.tail = (rb.tail + 1) % rb.size
-	if rb.len > rb.size {
-		rb.len = rb.size
-		rb.head = rb.tail
+// NewRingBuffer 创建并返回一个新的 RingBuffer 实例。
+// 参数 size 指定缓冲区的容量大小。
+// 如果 size <= 0 会返回 ErrInvalidSize 错误。
+func NewRingBuffer(size int) (*RingBuffer, error) {
+	if size <= 0 {
+		return nil, ErrInvalidSize
 	}
 
-	return nil
+	rb := &RingBuffer{
+		buf:  make([]interface{}, size),
+		size: size,
+	}
+	return rb, nil
 }
 
-// Shift removes an element from head of the ring buffer and returns it.
+// Push 向缓冲区尾部添加一个元素。
+// 如果缓冲区已满，最旧的元素会被覆盖。
+func (rb *RingBuffer) Push(val interface{}) {
+	rb.buf[rb.tail] = val
+	rb.tail = (rb.tail + 1) % rb.size
+
+	if rb.len < rb.size {
+		rb.len++
+	} else {
+		// 缓冲区已满，移动头指针
+		rb.head = rb.tail
+	}
+}
+
+// Shift 从缓冲区头部移除并返回一个元素。
+// 如果缓冲区为空，返回 ErrBufferEmpty 错误。
 func (rb *RingBuffer) Shift() (interface{}, error) {
 	if rb.len <= 0 {
-		return "", fmt.Errorf("%s", "no buffer")
+		return nil, ErrBufferEmpty
 	}
 
 	val := rb.buf[rb.head]
@@ -51,31 +70,48 @@ func (rb *RingBuffer) Shift() (interface{}, error) {
 	return val, nil
 }
 
-// Fetch returns all elements
-func (rb *RingBuffer) Fetch() ([]interface{}, error) {
-	val := make([]interface{}, rb.len)
-
-	len := rb.len
-	for i := 0; len > 0; len-- {
-		val[i] = rb.buf[(rb.head+i)%rb.size]
-		i++
+// Fetch 返回缓冲区中的所有元素，但不移除它们。
+// 返回的元素顺序与插入顺序一致。
+func (rb *RingBuffer) Fetch() []interface{} {
+	if rb.len == 0 {
+		return []interface{}{}
 	}
 
-	return val, nil
+	result := make([]interface{}, rb.len)
+	for i := 0; i < rb.len; i++ {
+		result[i] = rb.buf[(rb.head+i)%rb.size]
+	}
+
+	return result
 }
 
-// Clear removes all elements and returns those elements.
-func (rb *RingBuffer) Clear() ([]interface{}, error) {
-	val := make([]interface{}, rb.len)
+// Clear 清空缓冲区并返回所有元素。
+func (rb *RingBuffer) Clear() []interface{} {
+	result := rb.Fetch()
 
-	for i := 0; rb.len > 0; rb.len-- {
-		val[i] = rb.buf[rb.head]
-		i++
-		rb.head = (rb.head + 1) % rb.size
-	}
-
+	rb.head = 0
+	rb.tail = 0
 	rb.len = 0
-	rb.tail = rb.head
 
-	return val, nil
+	return result
+}
+
+// Len 返回当前缓冲区中的元素数量。
+func (rb *RingBuffer) Len() int {
+	return rb.len
+}
+
+// Cap 返回缓冲区的总容量。
+func (rb *RingBuffer) Cap() int {
+	return rb.size
+}
+
+// IsFull 检查缓冲区是否已满。
+func (rb *RingBuffer) IsFull() bool {
+	return rb.len == rb.size
+}
+
+// IsEmpty 检查缓冲区是否为空。
+func (rb *RingBuffer) IsEmpty() bool {
+	return rb.len == 0
 }
